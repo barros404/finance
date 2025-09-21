@@ -1,0 +1,46 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "pgpass",
+    "database": "finance_ia",
+    "host": "localhost",
+    "port": 5432,
+    "dialect": "postgres",
+    "logging": false,
+    "dialectOptions": {
+      "useUTC": false
+    },
+    "timezone": "-03:00"
+  },
+  "test": {
+    "username": "postgres",
+    "password": "pgpass",
+    "database": "finance_ia_test",
+    "host": "localhost",
+    "port": 5432,
+    "dialect": "postgres",
+    "logging": false,
+    "dialectOptions": {
+      "useUTC": false
+    },
+    "timezone": "-03:00"
+  },
+  "production": {
+    "username": "postgres",
+    "password": "pgpass",
+    "database": "finance_ia",
+    "host": "localhost",
+    "port": 5432,
+    "dialect": "postgres",
+    "logging": false,
+    "timezone": "-03:00",
+    "ssl": true,
+    "dialectOptions": {
+      "useUTC": false,
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
+  }
+}
