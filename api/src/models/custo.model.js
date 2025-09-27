@@ -81,6 +81,36 @@ module.exports = (sequelize) => {
         }
       },
       comment: 'Valor calculado do custo'
+    },
+    contaPgc: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+      comment: 'Código da conta PGC-AO mapeada'
+    },
+    nomeContaPgc: {
+      type: DataTypes.STRING(200),
+      allowNull: true,
+      comment: 'Nome da conta PGC-AO'
+    },
+    confiancaMapeamento: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 0,
+        max: 100
+      },
+      comment: 'Confiança do mapeamento PGC (0-100)'
+    },
+    categoriaPersonalizada: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      comment: 'Categoria personalizada pelo usuário'
+    },
+    mapeamentoManual: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: 'Indica se o mapeamento foi feito manualmente'
     }
     
   }, {

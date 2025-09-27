@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Search, Wallet, Download, Calendar, Eye, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
-import { tesourariaApi } from '../services/api';
+import { mockTesourariaApi } from '../services/mock/mockApi.js';
 
 const Tesouraria = () => {
   const navigate = useNavigate();
@@ -11,7 +11,6 @@ const Tesouraria = () => {
   const [error, setError] = useState(null);
   const [filtros, setFiltros] = useState({
     ano: new Date().getFullYear(),
-    status: '',
     pagina: 1,
     limite: 10
   });
@@ -20,15 +19,13 @@ const Tesouraria = () => {
     totalPaginas: 0,
     paginaAtual: 1
   });
-  const [fluxoCaixa, setFluxoCaixa] = useState({
-    fluxoCaixa: [],
-    resumo: {
+  const [estatisticas, setEstatisticas] = useState({
       totalPlanos: 0,
-      totalEntradas: 0,
-      totalSaidas: 0,
-      totalFinanciamentos: 0,
-      saldoGeralLiquido: 0
-    }
+    planosPendentes: 0,
+    planosEmAnalise: 0,
+    planosAtivos: 0,
+    planosArquivados: 0,
+    totalOrcamentosAtivos: 0
   });
 
   // Função para formatar valores monetários
@@ -83,7 +80,7 @@ const Tesouraria = () => {
     
     try {
       console.log('🔄 Carregando planos de tesouraria com filtros:', filtros);
-      const response = await tesourariaApi.listarPlanos(filtros);
+      const response = await mockTesourariaApi.listarPlanos(filtros);
       
       console.log('📥 Resposta da API de tesouraria:', response);
       
@@ -97,13 +94,19 @@ const Tesouraria = () => {
           statusCor: corDoStatus(plano.status),
           criadoEmFormatado: new Date(plano.createdAt).toLocaleDateString('pt-AO'),
           mesFormatado: nomeMes(plano.mes || new Date().getMonth() + 1),
-          // Calcular totais se houver dados relacionados
+          // Informações sobre orçamentos e planos (para exibição na listagem)
+          orcamentoAprovado: plano.orcamentoAprovado || false,
+          totalPlanos: plano.totalPlanos || 0,
+          planosAprovadosAtivos: plano.planosAprovadosAtivos || 0,
+          planosPendentes: plano.planosPendentes || 0,
+          planosEmAnalise: plano.planosEmAnalise || 0,
+          // Manter dados financeiros para quando abrir o plano
           totalEntradas: plano.entradas?.reduce((sum, entrada) => sum + parseFloat(entrada.valor || 0), 0) || 0,
           totalSaidas: plano.saidas?.reduce((sum, saida) => sum + parseFloat(saida.valor || 0), 0) || 0,
           totalFinanciamentos: plano.financiamentos?.reduce((sum, fin) => sum + parseFloat(fin.valor || 0), 0) || 0
         }));
 
-        // Calcular saldo líquido para cada plano
+        // Calcular saldo líquido para cada plano (mantido para detalhes)
         planosProcessados.forEach(plano => {
           plano.saldoLiquido = plano.totalEntradas - plano.totalSaidas + plano.totalFinanciamentos;
         });
@@ -129,42 +132,63 @@ const Tesouraria = () => {
     }
   }, [filtros]);
 
-  // Carregar fluxo de caixa
-  const carregarFluxoCaixa = useCallback(async () => {
+  // Carregar estatísticas dos planos
+  const carregarEstatisticas = useCallback(async () => {
     try {
-      console.log('🔄 Carregando fluxo de caixa...');
-      const response = await tesourariaApi.obterFluxoCaixa({
-        dataInicio: `${filtros.ano}-01-01`,
-        dataFim: `${filtros.ano}-12-31`
-      });
+      console.log('🔄 Carregando estatísticas dos planos...');
       
-      console.log('📥 Resposta da API de fluxo de caixa:', response);
-      
-      if (response.success && response.data) {
-        setFluxoCaixa(response.data);
-        console.log('✅ Fluxo de caixa carregado:', response.data);
-      }
-    } catch (err) {
-      console.error('❌ Erro ao carregar fluxo de caixa:', err);
-      // Usar valores padrão em caso de erro
-      setFluxoCaixa({
-        fluxoCaixa: [],
-        resumo: {
-          totalPlanos: 0,
-          totalEntradas: 0,
-          totalSaidas: 0,
-          totalFinanciamentos: 0,
-          saldoGeralLiquido: 0
+      // Calcular estatísticas localmente dos planos carregados
+      const stats = {
+        totalPlanos: planos.length,
+        planosPendentes: planos.filter(p => p.status === 'rascunho').length,
+        planosEmAnalise: planos.filter(p => p.status === 'em_analise').length,
+        planosAtivos: planos.filter(p => p.status === 'ativo').length,
+        planosArquivados: planos.filter(p => p.status === 'concluido').length,
+        totalOrcamentosAtivos: 0
+      };
+
+      // Tentar carregar orçamentos ativos da API
+      try {
+        const orcamentosResponse = await mockTesourariaApi.obterOrcamentosAtivos({
+          ano: filtros.ano
+        });
+        
+        if (orcamentosResponse.success && orcamentosResponse.data) {
+          stats.totalOrcamentosAtivos = orcamentosResponse.data.total || 0;
         }
+      } catch (orcError) {
+        console.log('⚠️ Não foi possível carregar orçamentos ativos:', orcError.message);
+        // Usar valor padrão se não conseguir carregar
+        stats.totalOrcamentosAtivos = 0;
+      }
+
+      setEstatisticas(stats);
+      console.log('✅ Estatísticas calculadas:', stats);
+    } catch (err) {
+      console.error('❌ Erro ao carregar estatísticas:', err);
+      // Usar valores padrão em caso de erro
+      setEstatisticas({
+          totalPlanos: 0,
+        planosPendentes: 0,
+        planosEmAnalise: 0,
+        planosAtivos: 0,
+        planosArquivados: 0,
+        totalOrcamentosAtivos: 0
       });
     }
-  }, [filtros.ano]);
+  }, [filtros.ano, planos]);
 
   // Carregar dados ao montar o componente
   useEffect(() => {
     carregarPlanos();
-    carregarFluxoCaixa();
-  }, [carregarPlanos, carregarFluxoCaixa]);
+  }, [carregarPlanos]);
+
+  // Carregar estatísticas após carregar os planos
+  useEffect(() => {
+    if (planos.length > 0) {
+      carregarEstatisticas();
+    }
+  }, [planos, carregarEstatisticas]);
 
   // Verificar mensagem de sucesso da navegação
   useEffect(() => {
@@ -187,7 +211,13 @@ const Tesouraria = () => {
   };
 
   const handleVisualizarPlano = (planoId) => {
-    navigate(`/tesouraria/${planoId}`);
+    // Navegar para a página de detalhes do plano com os dados financeiros
+    navigate(`/tesouraria/${planoId}`, { 
+      state: { 
+        mostrarDetalhes: true,
+        dadosFinanceiros: true 
+      } 
+    });
   };
 
   const handleBaixarPlano = async (planoId) => {
@@ -233,19 +263,19 @@ const Tesouraria = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto mt-28 px-10 pb-10">
 
-        {/* Dashboard de Fluxo de Caixa */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Dashboard de Estatísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-white/80 mb-1">Total Entradas</p>
+                <p className="text-sm font-semibold text-white/80 mb-1">Total de Planos</p>
                 <p className="text-3xl font-bold bg-gradient-to-b from-white to-gray-200 bg-clip-text text-transparent">
-                  {formatarValor(fluxoCaixa.resumo.totalEntradas)}
+                  {estatisticas.totalPlanos}
                 </p>
-                <p className="text-xs text-white/60 mt-1">Receitas previstas</p>
+                <p className="text-xs text-white/60 mt-1">Planos de tesouraria</p>
               </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-[#10b981] to-[#059669] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#10b981]/30">
-                <TrendingUp className="w-6 h-6" />
+              <div className="w-12 h-12 bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#667eea]/30">
+                <Wallet className="w-6 h-6" />
               </div>
             </div>
           </div>
@@ -253,29 +283,14 @@ const Tesouraria = () => {
           <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-white/80 mb-1">Total Saídas</p>
-                <p className="text-3xl font-bold bg-gradient-to-b from-white to-gray-200 bg-clip-text text-transparent">
-                  {formatarValor(fluxoCaixa.resumo.totalSaidas)}
+                <p className="text-sm font-semibold text-white/80 mb-1">Planos Pendentes</p>
+                <p className="text-3xl font-bold bg-gradient-to-b from-yellow-400 to-yellow-300 bg-clip-text text-transparent">
+                  {estatisticas.planosPendentes}
                 </p>
-                <p className="text-xs text-white/60 mt-1">Despesas previstas</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-[#ef4444] to-[#dc2626] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#ef4444]/30">
-                <TrendingDown className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-white/80 mb-1">Financiamentos</p>
-                <p className="text-3xl font-bold bg-gradient-to-b from-white to-gray-200 bg-clip-text text-transparent">
-                  {formatarValor(fluxoCaixa.resumo.totalFinanciamentos)}
-                </p>
-                <p className="text-xs text-white/60 mt-1">Empréstimos e investimentos</p>
+                <p className="text-xs text-white/60 mt-1">Aguardando aprovação</p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-[#f59e0b] to-[#d97706] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#f59e0b]/30">
-                💼
+                ⏳
               </div>
             </div>
           </div>
@@ -283,14 +298,59 @@ const Tesouraria = () => {
           <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-white/80 mb-1">Saldo Líquido</p>
-                <p className={`text-3xl font-bold bg-gradient-to-b ${fluxoCaixa.resumo.saldoGeralLiquido >= 0 ? 'from-green-400 to-green-300' : 'from-red-400 to-red-300'} bg-clip-text text-transparent`}>
-                  {formatarValor(fluxoCaixa.resumo.saldoGeralLiquido)}
+                <p className="text-sm font-semibold text-white/80 mb-1">Em Análise</p>
+                <p className="text-3xl font-bold bg-gradient-to-b from-blue-400 to-blue-300 bg-clip-text text-transparent">
+                  {estatisticas.planosEmAnalise}
                 </p>
-                <p className="text-xs text-white/60 mt-1">Resultado geral</p>
+                <p className="text-xs text-white/60 mt-1">Sendo analisados</p>
               </div>
-              <div className={`w-12 h-12 bg-gradient-to-br ${fluxoCaixa.resumo.saldoGeralLiquido >= 0 ? 'from-[#10b981] to-[#059669]' : 'from-[#ef4444] to-[#dc2626]'} rounded-xl flex items-center justify-center text-2xl shadow-lg`}>
-                💰
+              <div className="w-12 h-12 bg-gradient-to-br from-[#3b82f6] to-[#1d4ed8] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#3b82f6]/30">
+                🔍
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white/80 mb-1">Planos Ativos</p>
+                <p className="text-3xl font-bold bg-gradient-to-b from-green-400 to-green-300 bg-clip-text text-transparent">
+                  {estatisticas.planosAtivos}
+                </p>
+                <p className="text-xs text-white/60 mt-1">Em execução</p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-[#10b981] to-[#059669] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#10b981]/30">
+                ✅
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white/80 mb-1">Arquivados</p>
+                <p className="text-3xl font-bold bg-gradient-to-b from-gray-400 to-gray-300 bg-clip-text text-transparent">
+                  {estatisticas.planosArquivados}
+                </p>
+                <p className="text-xs text-white/60 mt-1">Concluídos</p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-[#6b7280] to-[#374151] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#6b7280]/30">
+                📁
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white/80 mb-1">Orçamentos Ativos</p>
+                <p className="text-3xl font-bold bg-gradient-to-b from-purple-400 to-purple-300 bg-clip-text text-transparent">
+                  {estatisticas.totalOrcamentosAtivos}
+                </p>
+                <p className="text-xs text-white/60 mt-1">Orçamentos em uso</p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#8b5cf6]/30">
+                💼
               </div>
             </div>
           </div>
@@ -387,24 +447,26 @@ const Tesouraria = () => {
                           {plano.descricao && (
                             <p className="text-white/70 mb-3">{plano.descricao}</p>
                           )}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                             <div>
-                              <p className="text-white/60">Entradas</p>
-                              <p className="font-bold text-green-400">{formatarValor(plano.totalEntradas)}</p>
+                              <p className="text-white/60">Orçamento Aprovado</p>
+                              <p className="font-bold text-green-400">{plano.orcamentoAprovado ? 'Sim' : 'Não'}</p>
                             </div>
                             <div>
-                              <p className="text-white/60">Saídas</p>
-                              <p className="font-bold text-red-400">{formatarValor(plano.totalSaidas)}</p>
+                              <p className="text-white/60">Total de Planos</p>
+                              <p className="font-bold text-blue-400">{plano.totalPlanos || 0}</p>
                             </div>
                             <div>
-                              <p className="text-white/60">Financiamentos</p>
-                              <p className="font-bold text-yellow-400">{formatarValor(plano.totalFinanciamentos)}</p>
+                              <p className="text-white/60">Planos Aprovados/Ativos</p>
+                              <p className="font-bold text-purple-400">{plano.planosAprovadosAtivos || 0}</p>
                             </div>
                             <div>
-                              <p className="text-white/60">Saldo Líquido</p>
-                              <p className={`font-bold ${plano.saldoLiquido >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {formatarValor(plano.saldoLiquido)}
-                              </p>
+                              <p className="text-white/60">Planos Pendentes</p>
+                              <p className="font-bold text-yellow-400">{plano.planosPendentes || 0}</p>
+                            </div>
+                            <div>
+                              <p className="text-white/60">Em Análise</p>
+                              <p className="font-bold text-orange-400">{plano.planosEmAnalise || 0}</p>
                             </div>
                           </div>
                         </div>

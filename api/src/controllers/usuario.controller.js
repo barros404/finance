@@ -596,12 +596,19 @@ const atualizarSenha = async (req, res, next) => {
     next(erro);
   }
 };
+const obterPerfil=async(req, res, next)=>{
+
+}
+const alterarStatus=async(req,res,next)=>{
+}
 
 module.exports = {
   criarUsuario,
+  obterPerfil,
   listarUsuarios,
   obterUsuarioPorId,
   atualizarUsuario,
   removerUsuario,
-  atualizarSenha
+  atualizarSenha,
+  alterarStatus
 };

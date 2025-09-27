@@ -30,6 +30,8 @@ export const AuthProvider = ({ children }) => {
           try {
             const parsedUser = JSON.parse(userData);
             console.log('✅ Dados do usuário carregados:', parsedUser);
+            
+            // Primeiro, definir o usuário como autenticado para evitar flash de login
             setUser(parsedUser);
             setIsAuthenticated(true);
             
@@ -42,6 +44,8 @@ export const AuthProvider = ({ children }) => {
                 console.log('✅ Token válido, atualizando dados do usuário:', response.data.user);
                 setUser(response.data.user);
                 localStorage.setItem('user', JSON.stringify(response.data.user));
+              } else {
+                throw new Error('Resposta inválida da API');
               }
             } catch (tokenError) {
               console.log('❌ Token inválido ou expirado:', tokenError.message);
@@ -90,11 +94,15 @@ export const AuthProvider = ({ children }) => {
         const token = response.data.token;
         
         if (userData && token) {
+          // Garantir que os dados sejam salvos no localStorage
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('user', JSON.stringify(userData));
+          
+          // Atualizar o estado
           setUser(userData);
           setIsAuthenticated(true);
           
-          // Os dados já foram salvos no localStorage pelo authApi.login
-          console.log('✅ Usuário autenticado com sucesso');
+          console.log('✅ Usuário autenticado com sucesso e dados salvos');
         } else {
           throw new Error('Dados de usuário ou token ausentes na resposta');
         }
@@ -107,8 +115,13 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('❌ Erro no login:', error);
+      
+      // Limpar dados em caso de erro
       setUser(null);
       setIsAuthenticated(false);
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      
       throw error;
     } finally {
       setLoading(false);

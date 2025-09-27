@@ -1,62 +1,61 @@
+
 /**
  * Controlador de Orçamentos - EndiAgro FinancePro
  * 
  * Este controlador gerencia todas as operações relacionadas a orçamentos,
  * incluindo CRUD completo, validações e integração com o frontend.
  * 
- * @author EndiAgro Development Team
- * @version 1.0.0
+ * @author Antonio Emiliano Barros
+ * @version 1.1.0
  */
 
-const { Orcamento, Receita, Custo, Ativo, Usuario, Empresa } = require('../models');
+const { Orcamento, Receita, Custo, Ativo, Usuario, Empresa, PgcMapping, Sazonalidade } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 const { constants, errorMessages, successMessages } = require('../config/api.config');
+const PGCMappingService = require('../services/pgcMappingService');
 const { Console } = require('winston/lib/winston/transports');
-
-
-
 /**
  * Lista todos os orçamentos com filtros e paginação
  * @route GET /api/orcamentos
  */
 exports.listarOrcamentos = async (req, res, next) => {
   try {
-    const { 
-      status, 
-      busca, 
-      pagina = 1, 
+    const {
+      status,
+      busca,
+      pagina = 1,
       limite = 10,
       dataInicio,
       dataFim,
       ordenarPor = 'ano',
       ordem = 'DESC'
     } = req.query;
-    
+
     const offset = (pagina - 1) * limite;
-    
+
     // Construir filtros
     const where = {
       empresaId: req.usuario.empresaId
     };
-    
+
     if (status) {
       where.status = status;
     }
-    
+
     if (busca) {
       where[Op.or] = [
         { nome: { [Op.iLike]: `%${busca}%` } },
         { descricao: { [Op.iLike]: `%${busca}%` } }
       ];
     }
-    
+
     if (dataInicio && dataFim) {
       where.dataInicio = {
         [Op.between]: [dataInicio, dataFim]
       };
     }
-    
+
     // Buscar orçamentos
     const { count, rows: orcamentos } = await Orcamento.findAndCountAll({
       where,
@@ -67,17 +66,22 @@ exports.listarOrcamentos = async (req, res, next) => {
         {
           model: Receita,
           as: 'receitas',
-          attributes: ['id', 'descricao', 'valor', 'quantidade', 'precoUnitario']
+          attributes: ['id', 'descricao', 'valor', 'quantidade', 'precoUnitario', 'contaPgc', 'nomeContaPgc', 'confiancaMapeamento']
         },
         {
           model: Custo,
           as: 'custos',
-          attributes: ['id', 'nome', 'descricao', 'tipoCusto', 'valor', 'quantidade', 'custoUnitario', 'frequencia', 'cargo', 'tipoContratacao', 'salario']
+          attributes: ['id', 'nome', 'descricao', 'tipoCusto', 'valor', 'quantidade', 'custoUnitario', 'frequencia', 'cargo', 'tipoContratacao', 'salario', 'contaPgc', 'nomeContaPgc', 'confiancaMapeamento']
         },
         {
           model: Ativo,
           as: 'ativos',
-          attributes: ['id', 'nome', 'valor', 'tipo']
+          attributes: ['id', 'nome', 'valor', 'tipo', 'contaPgc', 'nomeContaPgc', 'confiancaMapeamento']
+        },
+        {
+          model: Sazonalidade, // Incluir sazonalidade
+          as: 'sazonalidades',
+          attributes: ['id', 'mes', 'percentual']
         },
         {
           model: Usuario,
@@ -86,17 +90,18 @@ exports.listarOrcamentos = async (req, res, next) => {
         }
       ]
     });
-    
+    console.log()
+
     // Calcular totais para cada orçamento
     const orcamentosComTotais = orcamentos.map(orcamento => {
       const orcamentoJson = orcamento.toJSON();
-      
+
       const totalReceita = orcamentoJson.receitas.reduce((sum, rev) => sum + parseFloat(rev.valor || 0), 0);
       const totalCusto = orcamentoJson.custos.reduce((sum, cost) => sum + parseFloat(cost.valor || 0), 0);
       const totalAtivos = orcamentoJson.ativos.reduce((sum, asset) => sum + parseFloat(asset.valor || 0), 0);
       const resultadoLiquido = totalReceita - totalCusto;
       const margem = totalReceita > 0 ? (resultadoLiquido / totalReceita) * 100 : 0;
-      
+
       return {
         ...orcamentoJson,
         totalReceita: parseFloat(totalReceita.toFixed(2)),
@@ -106,18 +111,19 @@ exports.listarOrcamentos = async (req, res, next) => {
         margem: parseFloat(margem.toFixed(2))
       };
     });
-    
+
+    // Resposta seguindo exatamente a especificação do frontend
     res.status(200).json({
       status: 'success',
-      message: successMessages.RETRIEVED,
       data: {
         orcamentos: orcamentosComTotais,
         pagination: {
-          currentPage: parseInt(pagina),
-          totalPages: Math.ceil(count / limite),
-          totalItems: count,
-          itemsPerPage: parseInt(limite)
+          total: orcamentos.length || 0,
+          pagina: parseInt(pagina),
+          limite: parseInt(limite),
+          totalPaginas: Math.ceil(orcamentos.length / limite)
         }
+
       }
     });
   } catch (error) {
@@ -131,10 +137,11 @@ exports.listarOrcamentos = async (req, res, next) => {
  * @route POST /api/orcamentos/novo-orcamento
  */
 exports.criarOrcamentoCompleto = async (req, res, next) => {
+
   const transaction = await Orcamento.sequelize.transaction();
-  
+
   try {
-    const { 
+    const {
       nome,
       descricao,
       ano,
@@ -142,38 +149,63 @@ exports.criarOrcamentoCompleto = async (req, res, next) => {
       receitas = [],
       custos = { materials: [], services: [], personnel: [], fixed: [] },
       ativos = [],
-      sazonalidade = { hasSeasonality: false, months: [] }
+      sazonalidade = []
     } = req.body;
 
-    console.log('Dados recebidos para orçamento:', {
-      nome, descricao, ano, observacoes,
-      receitasCount: receitas.length,
-      materialsCount: custos.materials.length,
-      servicesCount: custos.services.length,
-      personnelCount: custos.personnel.length,
-      fixedCount: custos.fixed.length
+
+    // Verificar se já existe um orçamento para essa empresa no mesmo ano
+    const orcamentoExistente = await Orcamento.findOne({
+      where: {
+        empresaId: req.usuario.empresaId,
+        ano: ano
+      }
     });
 
-    // 1. Criar o orçamento base
+    if (orcamentoExistente) {
+      await transaction.rollback();
+      return res.status(409).json({
+        status: 'error',
+        message: 'Já existe um orçamento para esta empresa neste ano.'
+      });
+    }
+
     const orcamento = await Orcamento.create({
       nome: nome || 'Novo Orçamento',
       descricao: descricao || '',
       ano: ano || new Date().getFullYear(),
-     // dataInicio: new Date(ano || new Date().getFullYear(), 0, 1),
-     // dataFim: new Date(ano || new Date().getFullYear(), 11, 31),
       moeda: 'AOA',
-      temSazonalidade: sazonalidade.hasSeasonality || false,
-      mesesSazonais: sazonalidade.months || Array(12).fill({ percentual: 8.33 }),
       observacoes: observacoes || '',
       empresaId: req.usuario.empresaId,
       criadoPor: req.usuario.id,
       status: constants.BUDGET_STATUS.DRAFT
     }, { transaction });
 
-    // 2. Adicionar receitas
+    // 6. Adicionar sazonalidade se fornecida
+    if (sazonalidade && sazonalidade.length > 0) {
+      await Promise.all(
+        sazonalidade.map(async (mesSazonal) => {
+          await Sazonalidade.create({
+            orcamentoId: orcamento.id,
+            mes: mesSazonal.mes,
+            percentual: mesSazonal.percentual
+          }, { transaction });
+        })
+      );
+    }
+    // Inicializar serviço de mapeamento PGC
+    const pgcMappingService = new PGCMappingService();
+
+    // 2. Adicionar receitas com mapeamento PGC
     const receitasCriadas = await Promise.all(
-      receitas.map(receita => 
-        Receita.create({
+      receitas.map(async (receita) => {
+        const mapeamento = pgcMappingService.mapearReceita({
+          nome: receita.description || 'Nova Receita',
+          descricao: receita.description || 'Adicionada via formulário de orçamento',
+          valor: receita.total || (receita.quantity || 0) * (receita.unitPrice || 0),
+          categoria: 'venda'
+        });
+
+        const receitaCriada = await Receita.create({
           nome: receita.description || 'Nova Receita',
           descricao: receita.description || 'Adicionada via formulário de orçamento',
           categoria: 'venda',
@@ -182,14 +214,33 @@ exports.criarOrcamentoCompleto = async (req, res, next) => {
           valor: receita.total || (receita.quantity || 0) * (receita.unitPrice || 0),
           orcamentoId: orcamento.id,
           empresaId: req.usuario.empresaId,
-          usuarioId: req.usuario.id
-        }, { transaction })
-      )
+          usuarioId: req.usuario.id,
+          contaPgc: mapeamento.contaPgc,
+          nomeContaPgc: mapeamento.nomeContaPgc,
+          confiancaMapeamento: mapeamento.confianca,
+          categoriaPersonalizada: mapeamento.categoriaCustomizada
+        }, { transaction });
+
+        // Salvar mapeamento PGC
+        await PgcMapping.create({
+          orcamentoId: orcamento.id,
+          itemTipo: 'receita',
+          itemId: receitaCriada.id,
+          descricaoOriginal: receita.description || 'Nova Receita',
+          contaPgc: mapeamento.contaPgc,
+          nomeContaPgc: mapeamento.nomeContaPgc,
+          confianca: mapeamento.confianca,
+          categoriaCustomizada: mapeamento.categoriaCustomizada,
+          mapeamentoOriginal: mapeamento.mapeamentoOriginal
+        }, { transaction });
+
+        return receitaCriada;
+      })
     );
 
-    // 3. Adicionar custos por tipo - NOVA ESTRUTURA
+    // 3. Adicionar custos por tipo com mapeamento PGC
     const custosCriados = [];
-    
+
     // Função para mapear custos do frontend para o banco
     const mapearCusto = (tipo, item) => {
       const baseCusto = {
@@ -197,7 +248,7 @@ exports.criarOrcamentoCompleto = async (req, res, next) => {
         orcamentoId: orcamento.id,
         empresaId: req.usuario.empresaId,
         usuarioId: req.usuario.id,
-        mes: item.mes || 1, // Mês padrão se não especificado
+        mes: item.mes || 1,
         frequencia: item.frequency || 'Mensal'
       };
 
@@ -230,14 +281,48 @@ exports.criarOrcamentoCompleto = async (req, res, next) => {
       }
     };
 
-    // Processar cada tipo de custo
+    // Processar cada tipo de custo com mapeamento PGC
     const processarCustos = async (tipo, itens) => {
       return Promise.all(
-        itens.map(item => 
-          Custo.create(mapearCusto(tipo, item), { transaction })
-        )
+        itens.map(async (item) => {
+          const dadosCusto = mapearCusto(tipo, item);
+
+          // Mapear para PGC
+          const mapeamento = pgcMappingService.mapearCusto({
+            nome: dadosCusto.nome,
+            descricao: dadosCusto.descricao,
+            tipoCusto: tipo,
+            valor: dadosCusto.valor,
+            categoria: tipo
+          });
+
+          const custoCriado = await Custo.create({
+            ...dadosCusto,
+            contaPgc: mapeamento.contaPgc,
+            nomeContaPgc: mapeamento.nomeContaPgc,
+            confiancaMapeamento: mapeamento.confianca,
+            categoriaPersonalizada: mapeamento.categoriaCustomizada
+          }, { transaction });
+
+          // Salvar mapeamento PGC
+          await PgcMapping.create({
+            orcamentoId: orcamento.id,
+            itemTipo: 'custo',
+            itemId: custoCriado.id,
+            descricaoOriginal: dadosCusto.nome || dadosCusto.descricao,
+            contaPgc: mapeamento.contaPgc,
+            nomeContaPgc: mapeamento.nomeContaPgc,
+            confianca: mapeamento.confianca,
+            categoriaCustomizada: mapeamento.categoriaCustomizada,
+            mapeamentoOriginal: mapeamento.mapeamentoOriginal
+          }, { transaction });
+
+          return custoCriado;
+        })
       );
     };
+
+    //
 
     // Adicionar custos de cada tipo
     const [materiais, servicos, pessoal, fixos] = await Promise.all([
@@ -249,21 +334,44 @@ exports.criarOrcamentoCompleto = async (req, res, next) => {
 
     custosCriados.push(...materiais, ...servicos, ...pessoal, ...fixos);
 
-    // 4. Adicionar ativos (se houver)
+    // 4. Adicionar ativos com mapeamento PGC
     const ativosCriados = await Promise.all(
-      (ativos || []).map(ativo => 
-        Ativo.create({
+      (ativos || []).map(async (ativo) => {
+        const mapeamento = pgcMappingService.mapearAtivo({
+          nome: ativo.description || 'Novo Ativo',
+          valor: ativo.value || 0,
+          tipo: ativo.type || 'outros'
+        });
+
+        const ativoCriado = await Ativo.create({
           nome: ativo.description || 'Novo Ativo',
           descricao: ativo.description || 'Adicionado via formulário de orçamento',
           valor: ativo.value || 0,
           tipo: ativo.type || 'outros',
-          vidaUtil: ativo.usefulLife || 5,
           orcamentoId: orcamento.id,
           empresaId: req.usuario.empresaId,
-          usuarioId: req.usuario.id
-        }, { transaction })
-      )
+          usuarioId: req.usuario.id,
+          contaPgc: mapeamento.contaPgc,
+          nomeContaPgc: mapeamento.nomeContaPgc,
+          confiancaMapeamento: mapeamento.confianca
+        }, { transaction });
+
+        // Salvar mapeamento PGC
+        await PgcMapping.create({
+          orcamentoId: orcamento.id,
+          itemTipo: 'ativo',
+          itemId: ativoCriado.id,
+          descricaoOriginal: ativo.description || 'Novo Ativo',
+          contaPgc: mapeamento.contaPgc,
+          nomeContaPgc: mapeamento.nomeContaPgc,
+          confianca: mapeamento.confianca,
+          mapeamentoOriginal: mapeamento.mapeamentoOriginal
+        }, { transaction });
+
+        return ativoCriado;
+      })
     );
+
 
     // 5. Calcular e atualizar totais do orçamento
     const receitaTotal = receitasCriadas.reduce((sum, r) => sum + parseFloat(r.valor || 0), 0);
@@ -280,23 +388,23 @@ exports.criarOrcamentoCompleto = async (req, res, next) => {
 
     await transaction.commit();
 
-    // Buscar o orçamento completo com os dados atualizados
+    // Buscar o orçamento completo com os dados atualizados (fora da transação)
     const orcamentoCompleto = await Orcamento.findByPk(orcamento.id, {
       include: [
-        { 
-          model: Receita, 
+        {
+          model: Receita,
           as: 'receitas',
-          attributes: ['id', 'nome', 'descricao', 'quantidade', 'precoUnitario', 'valor', 'categoria']
+          attributes: ['id', 'nome', 'descricao', 'quantidade', 'precoUnitario', 'valor', 'categoria', 'contaPgc', 'nomeContaPgc', 'confiancaMapeamento']
         },
-        { 
-          model: Custo, 
+        {
+          model: Custo,
           as: 'custos',
-          attributes: ['id', 'nome', 'descricao', 'tipoCusto', 'quantidade', 'custoUnitario', 'salario', 'valor', 'frequencia', 'cargo', 'tipoContratacao']
+          attributes: ['id', 'nome', 'descricao', 'tipoCusto', 'quantidade', 'custoUnitario', 'salario', 'valor', 'frequencia', 'tipoContratacao', 'contaPgc', 'nomeContaPgc', 'confiancaMapeamento']
         },
-        { 
-          model: Ativo, 
+        {
+          model: Ativo,
           as: 'ativos',
-          attributes: ['id', 'nome', 'descricao', 'valor', 'tipo', 'vidaUtil']
+          attributes: ['id', 'nome', 'descricao', 'valor', 'tipo', , 'contaPgc', 'nomeContaPgc', 'confiancaMapeamento']
         }
       ]
     });
@@ -318,12 +426,17 @@ exports.criarOrcamentoCompleto = async (req, res, next) => {
     });
 
   } catch (error) {
-    await transaction.rollback();
-    logger.error(`Erro ao criar orçamento completo: ${error.message}`, { 
-      error, 
+    // Verificar se a transação já foi commitada
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+
+    logger.error(`Erro ao criar orçamento completo: ${error.message}`, {
+      error,
       userId: req.usuario?.id,
-      body: req.body 
+      body: req.body
     });
+
     next(error);
   }
 };
@@ -335,7 +448,7 @@ exports.criarOrcamentoCompleto = async (req, res, next) => {
 exports.obterOrcamento = async (req, res, next) => {
   try {
     const { id } = req.params;
-    
+
     const orcamento = await Orcamento.findOne({
       where: {
         id,
@@ -345,17 +458,22 @@ exports.obterOrcamento = async (req, res, next) => {
         {
           model: Receita,
           as: 'receitas',
-          attributes: ['id', 'descricao', 'valor', 'quantidade', 'precoUnitario']
+          attributes: ['id', 'descricao', 'valor', 'quantidade', 'precoUnitario', 'contaPgc', 'nomeContaPgc', 'confiancaMapeamento']
         },
         {
           model: Custo,
           as: 'custos',
-          attributes: ['id', 'nome', 'descricao', 'tipoCusto', 'valor', 'quantidade', 'custoUnitario', 'frequencia', 'cargo', 'tipoContratacao', 'salario']
+          attributes: ['id', 'nome', 'descricao', 'tipoCusto', 'valor', 'quantidade', 'custoUnitario', 'frequencia', 'cargo', 'tipoContratacao', 'salario', 'contaPgc', 'nomeContaPgc', 'confiancaMapeamento']
         },
         {
           model: Ativo,
           as: 'ativos',
-          attributes: ['id', 'nome', 'valor', 'tipo']
+          attributes: ['id', 'nome', 'valor', 'tipo', 'contaPgc', 'nomeContaPgc', 'confiancaMapeamento']
+        },
+        {
+          model: Sazonalidade, // Incluir sazonalidade
+          as: 'sazonalidades',
+          attributes: ['id', 'mes', 'percentual']
         },
         {
           model: Usuario,
@@ -364,14 +482,14 @@ exports.obterOrcamento = async (req, res, next) => {
         }
       ]
     });
-    
+
     if (!orcamento) {
       return res.status(404).json({
         status: 'error',
         message: errorMessages.RESOURCE.NOT_FOUND
       });
     }
-    
+
     // Calcular totais
     const orcamentoJson = orcamento.toJSON();
     const totalReceita = orcamentoJson.receitas.reduce((sum, rev) => sum + parseFloat(rev.valor || 0), 0);
@@ -379,7 +497,7 @@ exports.obterOrcamento = async (req, res, next) => {
     const totalAtivos = orcamentoJson.ativos.reduce((sum, asset) => sum + parseFloat(asset.valor || 0), 0);
     const resultadoLiquido = totalReceita - totalCusto;
     const margem = totalReceita > 0 ? (resultadoLiquido / totalReceita) * 100 : 0;
-    
+
     const response = {
       ...orcamentoJson,
       totalReceita: parseFloat(totalReceita.toFixed(2)),
@@ -388,10 +506,10 @@ exports.obterOrcamento = async (req, res, next) => {
       resultadoLiquido: parseFloat(resultadoLiquido.toFixed(2)),
       margem: parseFloat(margem.toFixed(2))
     };
-    
+
+    // Resposta seguindo exatamente a especificação do frontend
     res.status(200).json({
       status: 'success',
-      message: successMessages.RETRIEVED,
       data: {
         orcamento: response
       }
@@ -402,20 +520,19 @@ exports.obterOrcamento = async (req, res, next) => {
   }
 };
 
-
 /**
  * Cria um novo orçamento
  * @route POST /api/orcamentos
  */
 exports.criarOrcamento = async (req, res, next) => {
   const transaction = await Orcamento.sequelize.transaction();
-  
+
   try {
-    const { 
-      nome, 
-      descricao, 
-      dataInicio, 
-      dataFim, 
+    const {
+      nome,
+      descricao,
+      dataInicio,
+      dataFim,
       moeda = 'AOA',
       temSazonalidade = false,
       mesesSazonais = [],
@@ -424,7 +541,7 @@ exports.criarOrcamento = async (req, res, next) => {
       custos = [],
       ativos = []
     } = req.body;
-    
+
     // Criar o orçamento base
     const orcamento = await Orcamento.create({
       nome,
@@ -439,11 +556,11 @@ exports.criarOrcamento = async (req, res, next) => {
       usuarioId: req.usuario.id,
       status: constants.BUDGET_STATUS.DRAFT
     }, { transaction });
-    
+
     // Adicionar receitas se fornecidas
     if (receitas && receitas.length > 0) {
       await Promise.all(
-        receitas.map(receita => 
+        receitas.map(receita =>
           Receita.create({
             nome: receita.nome || receita.descricao,
             descricao: receita.descricao || '',
@@ -458,11 +575,11 @@ exports.criarOrcamento = async (req, res, next) => {
         )
       );
     }
-    
+
     // Adicionar custos se fornecidos
     if (custos && custos.length > 0) {
       await Promise.all(
-        custos.map(custo => 
+        custos.map(custo =>
           Custo.create({
             nome: custo.nome || custo.descricao,
             descricao: custo.descricao || '',
@@ -477,17 +594,16 @@ exports.criarOrcamento = async (req, res, next) => {
         )
       );
     }
-    
+
     // Adicionar ativos se fornecidos
     if (ativos && ativos.length > 0) {
       await Promise.all(
-        ativos.map(ativo => 
+        ativos.map(ativo =>
           Ativo.create({
             nome: ativo.nome || ativo.descricao,
             descricao: ativo.descricao || '',
             valor: ativo.valor || 0,
             tipo: ativo.tipo || 'outro',
-            vidaUtil: ativo.vidaUtil || 5,
             orcamentoId: orcamento.id,
             empresaId: req.usuario.empresaId,
             usuarioId: req.usuario.id
@@ -495,9 +611,9 @@ exports.criarOrcamento = async (req, res, next) => {
         )
       );
     }
-    
+
     await transaction.commit();
-    
+
     // Buscar o orçamento criado com relacionamentos
     const orcamentoCompleto = await Orcamento.findByPk(orcamento.id, {
       include: [
@@ -506,7 +622,7 @@ exports.criarOrcamento = async (req, res, next) => {
         { model: Ativo, as: 'ativos' }
       ]
     });
-    
+
     res.status(201).json({
       status: 'success',
       message: successMessages.CREATED,
@@ -529,31 +645,31 @@ exports.criarOrcamento = async (req, res, next) => {
 exports.atualizarOrcamento = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { 
-      nome, 
-      descricao, 
-      dataInicio, 
-      dataFim, 
-      status, 
-      temSazonalidade, 
+    const {
+      nome,
+      descricao,
+      dataInicio,
+      dataFim,
+      status,
+      temSazonalidade,
       mesesSazonais,
-      observacoes 
+      observacoes
     } = req.body;
-    
+
     const orcamento = await Orcamento.findOne({
       where: {
         id,
         empresaId: req.usuario.empresaId
       }
     });
-    
+
     if (!orcamento) {
       return res.status(404).json({
         status: 'error',
         message: errorMessages.RESOURCE.NOT_FOUND
       });
     }
-    
+
     // Atualizar campos
     if (nome) orcamento.nome = nome;
     if (descricao !== undefined) orcamento.descricao = descricao;
@@ -563,9 +679,9 @@ exports.atualizarOrcamento = async (req, res, next) => {
     if (temSazonalidade !== undefined) orcamento.temSazonalidade = temSazonalidade;
     if (mesesSazonais) orcamento.mesesSazonais = mesesSazonais;
     if (observacoes !== undefined) orcamento.observacoes = observacoes;
-    
+
     await orcamento.save();
-    
+
     res.status(200).json({
       status: 'success',
       message: successMessages.UPDATED,
@@ -585,45 +701,45 @@ exports.atualizarOrcamento = async (req, res, next) => {
  */
 exports.excluirOrcamento = async (req, res, next) => {
   const transaction = await Orcamento.sequelize.transaction();
-  
+
   try {
     const { id } = req.params;
-    
+
     const orcamento = await Orcamento.findOne({
       where: {
         id,
         empresaId: req.usuario.empresaId
       }
     });
-    
+
     if (!orcamento) {
       return res.status(404).json({
         status: 'error',
         message: errorMessages.RESOURCE.NOT_FOUND
       });
     }
-    
+
     // Excluir registros relacionados
     await Receita.destroy({
       where: { orcamentoId: id },
       transaction
     });
-    
+
     await Custo.destroy({
       where: { orcamentoId: id },
       transaction
     });
-    
+
     await Ativo.destroy({
       where: { orcamentoId: id },
       transaction
     });
-    
+
     // Excluir o orçamento
     await orcamento.destroy({ transaction });
-    
+
     await transaction.commit();
-    
+
     res.status(204).json({
       status: 'success',
       message: successMessages.DELETED,
@@ -644,28 +760,28 @@ exports.aprovarOrcamento = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { observacoes } = req.body;
-    
+
     const orcamento = await Orcamento.findOne({
       where: {
         id,
         empresaId: req.usuario.empresaId
       }
     });
-    
+
     if (!orcamento) {
       return res.status(404).json({
         status: 'error',
         message: errorMessages.RESOURCE.NOT_FOUND
       });
     }
-    
+
     orcamento.status = constants.BUDGET_STATUS.APPROVED;
     orcamento.aprovadoPor = req.usuario.id;
     orcamento.dataAprovacao = new Date();
     if (observacoes) orcamento.observacoesAprovacao = observacoes;
-    
+
     await orcamento.save();
-    
+
     res.status(200).json({
       status: 'success',
       message: 'Orçamento aprovado com sucesso',
@@ -687,28 +803,28 @@ exports.rejeitarOrcamento = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { motivo } = req.body;
-    
+
     const orcamento = await Orcamento.findOne({
       where: {
         id,
         empresaId: req.usuario.empresaId
       }
     });
-    
+
     if (!orcamento) {
       return res.status(404).json({
         status: 'error',
         message: errorMessages.RESOURCE.NOT_FOUND
       });
     }
-    
+
     orcamento.status = constants.BUDGET_STATUS.REJECTED;
     orcamento.rejeitadoPor = req.usuario.id;
     orcamento.dataRejeicao = new Date();
     orcamento.motivoRejeicao = motivo;
-    
+
     await orcamento.save();
-    
+
     res.status(200).json({
       status: 'success',
       message: 'Orçamento rejeitado',
@@ -729,17 +845,17 @@ exports.rejeitarOrcamento = async (req, res, next) => {
 exports.obterEstatisticas = async (req, res, next) => {
   try {
     const { dataInicio, dataFim } = req.query;
-    
+
     const where = {
       empresaId: req.usuario.empresaId
     };
-    
+
     if (dataInicio && dataFim) {
       where.dataInicio = {
         [Op.between]: [dataInicio, dataFim]
       };
     }
-    
+
     const orcamentos = await Orcamento.findAll({
       where,
       include: [
@@ -747,7 +863,7 @@ exports.obterEstatisticas = async (req, res, next) => {
         { model: Custo, as: 'custos' }
       ]
     });
-    
+
     const estatisticas = {
       total: orcamentos.length,
       porStatus: {},
@@ -755,28 +871,28 @@ exports.obterEstatisticas = async (req, res, next) => {
       custoTotal: 0,
       margemMedia: 0
     };
-    
+
     let totalMargem = 0;
-    
+
     orcamentos.forEach(orcamento => {
       const orcamentoJson = orcamento.toJSON();
       const receita = orcamentoJson.receitas.reduce((sum, r) => sum + parseFloat(r.valor || 0), 0);
       const custo = orcamentoJson.custos.reduce((sum, c) => sum + parseFloat(c.valor || 0), 0);
       const margem = receita > 0 ? ((receita - custo) / receita) * 100 : 0;
-      
+
       estatisticas.receitaTotal += receita;
       estatisticas.custoTotal += custo;
       totalMargem += margem;
-      
+
       if (!estatisticas.porStatus[orcamento.status]) {
         estatisticas.porStatus[orcamento.status] = 0;
       }
       estatisticas.porStatus[orcamento.status]++;
     });
-    
+
     estatisticas.margemMedia = orcamentos.length > 0 ? totalMargem / orcamentos.length : 0;
     estatisticas.resultadoLiquido = estatisticas.receitaTotal - estatisticas.custoTotal;
-    
+
     res.status(200).json({
       status: 'success',
       message: successMessages.RETRIEVED,
@@ -789,3 +905,6 @@ exports.obterEstatisticas = async (req, res, next) => {
     next(error);
   }
 };
+exports.obterOrcamentoAprovado = async (req, res, next) => {
+
+}

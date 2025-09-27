@@ -1,0 +1,41 @@
+// Minimal PGC mapping. Expand with your full PGC plan as needed.
+export const pgcMapping = {
+  revenues: {
+    '71': { name: 'Vendas de bens' },
+    '72': { name: 'Prestação de serviços' },
+    '71': { name: 'Vendas'},
+    '711': { name:'Vendas de Mercadorias'},
+    '712': { name:'Vendas de Produtos Acabados'},
+    '713': { name:'Vendas de Subprodutos'},
+    '714': { name:'Vendas de Produtos Agrícolas'},
+    '715': { name:'Vendas de Produtos Pecuários'},
+    '72': { name:'Prestação de Serviços'},
+    '721': { name:'Serviços Técnicos'},
+    '722': { name:'Consultoria'},
+    '78': { name:'Proveitos e Ganhos Financeiros'},
+    '79': { name:'Proveitos e Ganhos Extraordinários'},
+  },
+  costs: {
+   '61': {name: 'Custo das Mercadorias Vendidas e Matérias Consumidas'},
+    '611': {name: 'Matérias-Primas'},
+    '612': {name: 'Materiais Diversos'},
+    '613': {name: 'Combustíveis e Lubrificantes'},
+    '62': {name: 'Fornecimentos e Serviços Externos'},
+    '621': {name: 'Subcontratos'},
+    '622': {name: 'Serviços Especializados'},
+    '623': {name: 'Materiais'},
+    '624': {name: 'Energia e Fluidos'},
+    '625': {name: 'Deslocações, Estadas e Transportes'},
+    '626': {name: 'Serviços Diversos'},
+    '63': {name: 'Custos com o Pessoal'},
+    '631': {name: 'Remunerações dos Órgãos Sociais'},
+    '632': {name: 'Remunerações do Pessoal'},
+    '635': {name: 'Encargos sobre Remunerações'},
+    '64': {name: 'Amortizações e Provisões'},
+    '641': {name: 'Amortizações do Exercício'},
+    '68': {name: 'Custos e Perdas Financeiros'},
+    '681': {name: 'Juros Suportados'},
+    '69': {name: 'Outros Custos Operacionais'}
+  },
+};
+

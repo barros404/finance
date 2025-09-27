@@ -234,20 +234,23 @@ const EditarOrcamento = () => {
         descricao: formData.descricao,
         dataInicio: formData.dataInicio,
         dataFim: formData.dataFim,
-        observacoes: formData.observacoes
+        observacoes: formData.observacoes,
+        receitas: formData.receitas,
+        custos: formData.custos,
+        ativos: formData.ativos
       };
 
       const response = await orcamentoApi.atualizarOrcamento(id, dadosAtualizacao);
       
       console.log('📥 Resposta da API:', response);
       
-      if (response.success) {
+      if (response.status === 'success' || response.success) {
         setSuccessMessage('Orçamento atualizado com sucesso!');
         setTimeout(() => {
-          navigate('/orcamentos');
+          navigate('/orcamento');
         }, 2000);
       } else {
-        throw new Error('Erro ao salvar alterações');
+        throw new Error(response.message || 'Erro ao salvar alterações');
       }
     } catch (err) {
       console.error('❌ Erro ao salvar orçamento:', err);

@@ -24,11 +24,6 @@ module.exports = (sequelize) => {
       allowNull: false,
       comment: 'Valor do ativo'
     },
-    mes: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      comment: 'Mês do ativo (1-12)'
-    },
     orcamentoId: {
       type: DataTypes.INTEGER,
       allowNull: false,

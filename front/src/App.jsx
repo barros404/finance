@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import RecuperarSenha from './pages/RecuperarSenha';
-import Layout from './components/Layout';
 import Orcamento from './pages/Orcamento';
 import Tesouraria from './pages/Tesouraria';
 import Relatorios from './pages/Relatorios';
@@ -12,8 +12,34 @@ import Configuracoes from './pages/Configuracoes';
 import NovoOrcamento from './pages/NovoOrcamento';
 import NovoTesouraria from './pages/NovoTesouraria';
 import OutputCenter from './pages/OutputCenter';
+import UploadDocumentos from './pages/UploadDocumentos';
 import VerOrcamento from './components/VerOrcamento';
 import EditarOrcamento from './components/EditarOrcamento';
+// Importar páginas dos módulos
+import CapturaDocumentos from './pages/modules/CapturaDocumentos';
+import ClassificacaoPGC from './pages/modules/ClassificacaoPGC';
+import AnaliseRiscos from './pages/modules/AnaliseRiscos';
+import ExecucaoOrcamental from './pages/modules/ExecucaoOrcamental';
+import PlanoExecucao from './pages/modules/PlanoExecucao';
+import RelatoriosExecutivos from './pages/modules/RelatoriosExecutivos';
+// Importar novas telas
+import MenuPrincipal from './components/MenuPrincipal';
+import DashboardCentralOutputs from './pages/DashboardCentralOutputs';
+import ProcessamentoOCR from './pages/ProcessamentoOCR';
+import ValidacaoContasPGC from './pages/ValidacaoContasPGC';
+import FormularioOrcamentoAnual from './pages/FormularioOrcamentoAnual';
+import RelatorioFinalConsolidado from './pages/RelatorioFinalConsolidado';
+import PlanoTesourariaMensal from './pages/PlanoTesourariaMensal';
+import FormularioPlanoTesouraria from './pages/FormularioPlanoTesouraria';
+import DashboardTesouraria from './pages/DashboardTesouraria';
+import DashboardCentroControle from './pages/DashboardCentroControle';
+import TelaOrcamento from './pages/TelaOrcamento';
+import Aprovacao from './pages/Aprovacao';
+import VisualizarExecucaoOrcamental from './pages/VisualizarExecucaoOrcamental';
+import VisualizarPlanoExecucao from './pages/VisualizarPlanoExecucao';
+import GerenciarUsuarios from './pages/GerenciarUsuarios';
+import DiagnosticPage from './pages/DiagnosticPage';
+import ApiConnectionTest from './components/ApiConnectionTest';
 
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
@@ -55,8 +81,9 @@ function AppContent() {
 
   // Se o usuário estiver autenticado, renderiza o layout com as rotas
   return (
-    <Layout paginaAtual={getPaginaAtual()} setPaginaAtual={(pagina) => navigate(`/${pagina}`)}>
-      <Routes>
+    <>
+      <Layout paginaAtual={getPaginaAtual()} setPaginaAtual={(pagina) => navigate(`/${pagina}`)}>
+        <Routes>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/orcamento" element={<Orcamento />} />
         <Route path="/orcamento/:id" element={<VerOrcamento />} />
@@ -67,10 +94,37 @@ function AppContent() {
         <Route path="/configuracoes" element={<Configuracoes />} />
         <Route path="/novo-orcamento" element={<NovoOrcamento />} />
         <Route path="/nova-tesouraria" element={<NovoTesouraria />} />
+        <Route path="/upload-documentos" element={<UploadDocumentos />} />
+        {/* Rotas dos módulos */}
+        <Route path="/captura-documentos" element={<CapturaDocumentos />} />
+        <Route path="/classificacao-pgc" element={<ClassificacaoPGC />} />
+        <Route path="/analise-riscos" element={<AnaliseRiscos />} />
+        <Route path="/execucao-orcamental" element={<ExecucaoOrcamental />} />
+        <Route path="/plano-execucao" element={<PlanoExecucao />} />
+        <Route path="/relatorios-executivos" element={<RelatoriosExecutivos />} />
+        {/* Novas rotas */}
+        <Route path="/menu-principal" element={<MenuPrincipal />} />
+        <Route path="/dashboard-central-outputs" element={<DashboardCentralOutputs />} />
+        <Route path="/processamento-ocr" element={<ProcessamentoOCR />} />
+        <Route path="/validacao-contas-pgc" element={<ValidacaoContasPGC />} />
+        <Route path="/formulario-orcamento-anual" element={<FormularioOrcamentoAnual />} />
+        <Route path="/relatorio-final-consolidado" element={<RelatorioFinalConsolidado />} />
+        <Route path="/plano-tesouraria-mensal" element={<PlanoTesourariaMensal />} />
+        <Route path="/formulario-plano-tesouraria" element={<FormularioPlanoTesouraria />} />
+        <Route path="/dashboard-tesouraria" element={<DashboardTesouraria />} />
+        <Route path="/dashboard-centro-controle" element={<DashboardCentroControle />} />
+        <Route path="/tela-orcamento" element={<TelaOrcamento />} />
+        <Route path="/aprovacao" element={<Aprovacao />} />
+        <Route path="/visualizar-execucao-orcamental/:id" element={<VisualizarExecucaoOrcamental />} />
+        <Route path="/visualizar-plano-execucao/:id" element={<VisualizarPlanoExecucao />} />
+        <Route path="/gerenciar-usuarios" element={<GerenciarUsuarios />} />
+        <Route path="/diagnostico" element={<DiagnosticPage />} />
         <Route path="/" element={<Dashboard />} />
         <Route path="*" element={<h1>Página não encontrada</h1>} />
       </Routes>
     </Layout>
+    <ApiConnectionTest />
+    </>
   );
 }
 

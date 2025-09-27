@@ -1,0 +1,139 @@
+# =========================
+# SISTEMA OPERACIONAL
+# =========================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+# =========================
+# AMBIENTES DE DESENVOLVIMENTO
+# =========================
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs (IntelliJ, PhpStorm, WebStorm, Android Studio)
+.idea/
+*.iml
+
+# =========================
+# NODE / JAVASCRIPT / TYPESCRIPT
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Next.js
+.next/
+out/
+
+# Expo / React Native
+.expo/
+.expo-shared/
+android/app/build/
+ios/build/
+ios/Pods/
+
+# Metro bundler cache
+.expo/.cache
+*.packager
+
+# =========================
+# BACKEND (Sequelize, Laravel, etc.)
+# =========================
+.env
+.env.*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Sequelize migrations cache
+sequelize-meta.json
+
+# Laravel
+/vendor/
+/node_modules/
+.env
+.phpunit.result.cache
+Homestead.yaml
+Homestead.json
+/storage/*.key
+/public/storage
+/storage/framework/*
+/storage/logs/*
+/bootstrap/cache/*
+
+# =========================
+# PYTHON
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+.venv/
+env/
+venv/
+
+# =========================
+# JAVA / ANDROID
+# =========================
+*.class
+*.log
+*.ctxt
+*.jar
+*.war
+*.ear
+*.iml
+.gradle/
+build/
+local.properties
+.idea/
+captures/
+outputs/
+*.apk
+*.ap_
+
+# =========================
+# GERAL
+# =========================
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Cache
+.cache/
+dist/
+tmp/
+temp/
+
+# Backup
+*.bak
+*.swp
+*.swo
+*.tmp
+
+# Arquivos pessoais
+*.secret
+*.key
+*.pem

@@ -14,6 +14,7 @@ const tesourariaController = require('../controllers/tesouraria.controller');
 const { protect } = require('../middleware/auth.middleware');
 const { body, param, query } = require('express-validator');
 const { validateRequest } = require('../middleware/validateRequest');
+const { verificarOrcamentoAprovado } = require('../middleware/verificarOrcamento');
 
 // Aplicar middleware de autenticação em todas as rotas
 router.use(protect);
@@ -77,7 +78,7 @@ router
   .route('/planos')
   .get(
     [
-      query('ano').optional().isInt({ min: 2000, max: 2100 }).toInt(),
+      query('ano').optional(),
       query('mes').optional().isInt({ min: 1, max: 12 }).toInt(),
       query('status').optional().isIn(['rascunho', 'pendente', 'aprovado', 'rejeitado', 'ativo', 'concluido']),
       query('pagina').optional().isInt({ min: 1 }).toInt(),
@@ -86,6 +87,7 @@ router
       query('ordem').optional().isIn(['ASC', 'DESC'])
     ],
     validateRequest,
+    verificarOrcamentoAprovado, // Novo middleware
     tesourariaController.listarPlanos
   )
   .post(
@@ -100,6 +102,7 @@ router
       body('financiamentos').optional().isArray()
     ],
     validateRequest,
+    verificarOrcamentoAprovado, // Novo middleware
     tesourariaController.criarPlano
   );
 
@@ -157,8 +160,12 @@ router
  *         description: Não autorizado
  */
 router.post(
-  '/novo-plano',
+    '/planos/completo',
   [
+    body('nome').isString().notEmpty(),
+    body('ano').isInt({ min: 2000, max: 2100 }),
+    body('mes').isInt({ min: 1, max: 12 }),
+    body('orcamentoId').isInt(),
     body('metadata').isObject().withMessage('Metadados são obrigatórios'),
     body('metadata.month').isInt({ min: 1, max: 12 }).withMessage('Mês inválido'),
     body('metadata.year').isInt({ min: 2000, max: 2100 }).withMessage('Ano inválido'),
@@ -215,8 +222,7 @@ router.post(
 router.get(
   '/fluxo-caixa',
   [
-    query('dataInicio').optional().isISO8601(),
-    query('dataFim').optional().isISO8601(),
+    
     query('planoId').optional().isInt(),
     query('tipo').optional().isIn(['mensal', 'trimestral', 'anual'])
   ],
@@ -395,6 +401,199 @@ router.post(
   ],
   validateRequest,
   tesourariaController.importarDoOrcamento
+);
+
+/**
+ * @swagger
+ * /api/tesouraria/planos-por-orcamento:
+ *   get:
+ *     summary: Lista planos de tesouraria por orçamento específico
+ *     tags: [Tesouraria]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: orcamentoId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do orçamento
+ *       - in: query
+ *         name: pagina
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número da página
+ *       - in: query
+ *         name: limite
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Itens por página
+ *       - in: query
+ *         name: ordenacao
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, mes, ano, status]
+ *           default: createdAt
+ *         description: Campo para ordenação
+ *     responses:
+ *       200:
+ *         description: Lista de planos retornada com sucesso
+ *       400:
+ *         description: ID do orçamento obrigatório
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  '/planos-por-orcamento',
+  [
+    query('orcamentoId').isInt().withMessage('ID do orçamento é obrigatório'),
+    query('pagina').optional().isInt({ min: 1 }).toInt(),
+    query('limite').optional().isInt({ min: 1, max: 100 }).toInt(),
+    query('ordenacao').optional().isIn(['createdAt', 'mes', 'ano', 'status'])
+  ],
+  validateRequest,
+  tesourariaController.listarPlanosPorOrcamento
+);
+
+/**
+ * @swagger
+ * /api/tesouraria/estatisticas:
+ *   get:
+ *     summary: Obtém estatísticas de tesouraria
+ *     tags: [Tesouraria]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Estatísticas retornadas com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       example: 10
+ *                     saldoAtual:
+ *                       type: number
+ *                       example: 200000
+ *                     recebimentosPrevistos:
+ *                       type: number
+ *                       example: 500000
+ *                     pagamentosPrevistos:
+ *                       type: number
+ *                       example: 400000
+ *                     saldoProjetado:
+ *                       type: number
+ *                       example: 300000
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  '/estatisticas',
+  tesourariaController.obterEstatisticas
+);
+
+/**
+ * @swagger
+ * /api/tesouraria/atividades-recentes:
+ *   get:
+ *     summary: Obtém atividades recentes relacionadas à execução orçamental
+ *     tags: [Tesouraria]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limite
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *         description: Número máximo de atividades a retornar
+ *     responses:
+ *       200:
+ *         description: Atividades recentes retornadas com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     atividades:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             example: "plano_123"
+ *                           tipo:
+ *                             type: string
+ *                             example: "plano_criado"
+ *                           titulo:
+ *                             type: string
+ *                             example: "Novo plano de tesouraria criado"
+ *                           descricao:
+ *                             type: string
+ *                             example: "Plano Mensal Janeiro - Orçamento 2024"
+ *                           timestamp:
+ *                             type: string
+ *                             format: date-time
+ *                           status:
+ *                             type: string
+ *                             example: "sucesso"
+ *                           usuario:
+ *                             type: string
+ *                             example: "João Silva"
+ *                           entidade:
+ *                             type: string
+ *                             example: "plano_tesouraria"
+ *                           entidadeId:
+ *                             type: integer
+ *                             example: 123
+ *                           dadosAdicionais:
+ *                             type: object
+ *                             properties:
+ *                               orcamentoNome:
+ *                                 type: string
+ *                               orcamentoAno:
+ *                                 type: integer
+ *                     total:
+ *                       type: integer
+ *                       example: 5
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  '/atividades-recentes',
+  [
+    query('limite').optional().isInt({ min: 1, max: 50 }).toInt()
+  ],
+  validateRequest,
+  tesourariaController.obterAtividadesRecentes
 );
 
 module.exports = router;

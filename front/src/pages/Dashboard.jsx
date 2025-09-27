@@ -1,482 +1,605 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import Layout from '../components/Layout';
+import api from '../services/api';
+
+// Desestrutura os serviços necessários
+const { 
+  aprovacaoService, 
+  validacaoContasService, 
+  orcamento: orcamentoService, 
+  tesourariaService 
+} = api;
+import { 
+  Upload, 
+  FileText, 
+  BarChart3, 
+  TrendingUp, 
+  Users, 
+  Settings, 
+  Bell, 
+  Search,
+  Filter,
+  Eye,
+  Download,
+  Plus,
+  Calendar,
+  DollarSign,
+  PieChart,
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Target,
+  Zap,
+  Shield,
+  Database,
+  FileImage,
+  Tag,
+  BookOpen,
+  CreditCard,
+  Banknote,
+  TrendingDown,
+  ArrowRight,
+  ArrowUp,
+  ArrowDown,
+  Camera,
+  FileCheck,
+  Calculator,
+  AlertCircle,
+  Monitor,
+  Cpu,
+  FileSpreadsheet,
+  PieChart as PieChartIcon,
+  BarChart2,
+  LineChart
+} from 'lucide-react';
 
 const Dashboard = () => {
-  const [loading, setLoading] = useState(true);
-  const [notificationCount, setNotificationCount] = useState(5);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [atividadesRecentes, setAtividadesRecentes] = useState([]);
+  const [estatisticas, setEstatisticas] = useState({
+    orcamentosPendentes: 0,
+    planosPendentes: 0,
+    contasPendentes: 0,
+    totalAprovacoes: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate page loading
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-
-    // Simulate real-time notifications
-    const notificationInterval = setInterval(() => {
-      setNotificationCount(prev => Math.max(0, prev + Math.floor(Math.random() * 3) - 1));
-    }, 10000);
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(notificationInterval);
-    };
+    carregarDadosDashboard();
   }, []);
 
-  // Close user menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (isUserMenuOpen && !event.target.closest('.user-menu')) {
-        setIsUserMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isUserMenuOpen]);
-
-  const handleLogout = async () => {
+  const carregarDadosDashboard = async () => {
+    setIsLoading(true);
     try {
-      await logout();
-      navigate('/login');
+      // Carregar estatísticas de aprovação
+      const [statsAprovacao, statsValidacao, atividades] = await Promise.all([
+        aprovacaoService.obterEstatisticas(),
+        validacaoContasService.dashboard(),
+        tesourariaService.obterAtividadesRecentes({ limite: 5 })
+      ]);
+
+      
+      // Combinar estatísticas
+      setEstatisticas({
+        orcamentosPendentes: statsAprovacao.itensPendentes || 0,
+        planosPendentes: statsAprovacao.planosPendentes || 0,
+        contasPendentes: statsValidacao.contasPendentes || 0,
+        totalAprovacoes: statsAprovacao.itensAprovados || 0
+      });
+
+      // Mapear atividades recentes da API
+      const atividadesMapeadas = atividades.data.map((atividade, index) => ({
+        id: atividade.id || index + 1,
+        tipo: atividade.tipo || 'info',
+        titulo: atividade.titulo || 'Atividade do sistema',
+        descricao: atividade.descricao || 'Nova atividade registrada',
+        timestamp: new Date(atividade.data || Date.now() - (index * 300000)),
+        status: atividade.status || 'sucesso',
+        usuario: atividade.usuario || 'Sistema'
+      }));
+
+      // Usar apenas dados da API
+      setAtividadesRecentes(atividadesMapeadas);
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+      console.error('Erro ao carregar dados do dashboard:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleUserMenuAction = (action) => {
-    setIsUserMenuOpen(false);
+  const quickAction = (action) => {
     switch (action) {
-      case 'profile':
-        // Por enquanto não faz nada, como solicitado
+      case 'carregar-documento':
+        navigate('/captura-documentos');
         break;
-      case 'settings':
-        navigate('/configuracoes');
+      case 'gerar-relatorio':
+        navigate('/relatorios-executivos');
         break;
-      case 'logout':
-        handleLogout();
+      case 'novo-orcamento':
+        navigate('/formulario-orcamento-anual');
+        break;
+      case 'ver-alertas':
+        navigate('/analise-riscos');
         break;
       default:
+        alert('Ação em desenvolvimento');
         break;
     }
   };
 
   const openModule = (module) => {
     switch (module) {
-      case 'dashboard':
-          navigate('/outputCenter');
+      case 'centro-controle':
+        navigate('/dashboard-centro-controle');
         break;
-      case 'budget':
-          navigate('/orcamento');
+      case 'captura-ocr':
+        navigate('/captura-documentos');
         break;
-      case 'treasury':
-          navigate('/tesouraria'); 
+      case 'classificacao-pgc':
+        navigate('/classificacao-pgc');
         break;
-    
+      case 'gestao-orcamental':
+        navigate('/tela-orcamento');
+        break;
+      case 'tesouraria':
+        navigate('/dashboard-tesouraria');
+        break;
+      case 'analise-risco':
+        navigate('/analise-riscos');
+        break;
+      case 'aprovacao':
+        navigate('/aprovacao');
+        break;
+      case 'execucao-orcamental':
+        navigate('/execucao-orcamental');
+        break;
+      case 'plano-execucao':
+        navigate('/plano-execucao');
+        break;
+      case 'relatorios-executivos':
+        navigate('/relatorios-executivos');
+        break;
+      case 'configuracao':
+        navigate('/configuracoes');
+        break;
+      case 'diagnostico':
+        navigate('/diagnostico');
+        break;
       default:
         alert(module + ' em desenvolvimento');
         break;
     }
-   
-    //console.log('Opening module:', module);
-    //alert(`Navegando para: ${module.toUpperCase()}\n\nEste módulo contém todas as funcionalidades descritas no sistema.`);
   };
 
-  const quickAction = (action) => {
-    switch (action) {
-      case 'upload':
-        alert('Abrindo interface de captura de documentos...');
-        break;
-      case 'report':  
-        alert('Iniciando gerador de relatórios...');
-        break;
-      case 'budget':
-       navigate('/novo-orcamento');
-        break;
-      case 'alert':
-        navigate('/notificacoes');
-        break;
-      
-      default:
-        alert('Ação em desenvolvimento');
-        break;
+  const getTipoIcon = (tipo) => {
+    switch (tipo) {
+      case 'upload': return '📤';
+      case 'classificacao': return '🏷️';
+      case 'orcamento': return '💰';
+      case 'alerta': return '⚠️';
+      case 'relatorio': return '📊';
+      default: return '📄';
     }
-    
-    
-    //  alert(actions[action] || 'Ação em desenvolvimento');
   };
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-[#0f0c29] to-[#302b63] flex justify-center items-center z-50">
-        <div className="w-20 h-20 border-4 border-white/10 border-t-white rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'sucesso': return 'text-green-400';
+      case 'alerta': return 'text-yellow-400';
+      case 'erro': return 'text-red-400';
+      default: return 'text-blue-400';
+    }
+  };
+
+  const formatarTempo = (timestamp) => {
+    const agora = new Date();
+    const diff = agora - timestamp;
+    const minutos = Math.floor(diff / 60000);
+    
+    if (minutos < 1) return 'Agora mesmo';
+    if (minutos < 60) return `${minutos} min atrás`;
+    
+    const horas = Math.floor(minutos / 60);
+    if (horas < 24) return `${horas}h atrás`;
+    
+    const dias = Math.floor(horas / 24);
+    return `${dias}d atrás`;
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white overflow-x-hidden">
-      {/* Header */}
-      <header className="bg-white/5 backdrop-blur-md border-b border-white/10 py-5 px-10 fixed w-full top-0 z-40 animate-slideDown">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#667eea]/30">
-              💼
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-2xl font-bold bg-gradient-to-b from-white to-gray-200 bg-clip-text text-transparent">FINANCE PRO</h1>
-              <p className="text-xs text-white/60">Sistema Integrado de Gestão Financeira</p>
-            </div>
+    <Layout>
+      {console.log('API::::',estatisticas)}
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">
+              FINANCE PRO - Menu Principal do Sistema
+            </h1>
+            <p className="text-white/70">
+              Bem-vindo, {user?.nome || 'Usuário'}! Sistema Integrado de Gestão Financeira
+            </p>
           </div>
-          
-          <div className="flex items-center gap-5">
-            <div className="relative cursor-pointer p-2 transition-transform hover:scale-110">
-              <span className={`absolute -top-1 -right-1 text-xs font-bold py-1 px-2 rounded-full ${
-                notificationCount > 10 ? 'bg-red-600' : notificationCount > 5 ? 'bg-yellow-500' : 'bg-red-500'
-              }`}>
-                {notificationCount}
-              </span>
-              🔔
-            </div>
-            
-            <div className="relative user-menu">
-              <div 
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-3 py-2 px-4 bg-white/10 rounded-full cursor-pointer transition-all hover:bg-white/15"
+
+          {/* Ações Rápidas */}
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 mb-10">
+            <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
+              <Zap className="w-6 h-6 text-yellow-400" />
+              Ações Rápidas
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <button 
+                onClick={() => quickAction('carregar-documento')}
+                className="group bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 rounded-2xl p-6 text-white transition-all hover:from-blue-500/30 hover:to-blue-600/30 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/20"
               >
-                <span>{user?.nome || user?.name || 'Usuário'}</span>
-                <div className="w-9 h-9 bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-full flex items-center justify-center font-bold">
-                  {(user?.nome || user?.name || 'U').charAt(0).toUpperCase()}
-                </div>
-                <ChevronDown className={`w-4 h-4 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
-              </div>
-              
-              {/* Dropdown Menu */}
-              {isUserMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl shadow-black/20 py-2 z-50">
-                  <div className="px-4 py-3 border-b border-white/10">
-                    <div className="text-sm font-semibold text-gray-800">{user?.nome || user?.name || 'Usuário'}</div>
-                    <div className="text-xs text-gray-600">{user?.email || 'email@exemplo.com'}</div>
-                    <div className="text-xs text-gray-500 mt-1">{user?.role || 'Administrador'}</div>
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                    <Upload className="w-6 h-6 text-blue-400" />
                   </div>
-                  
-                  <button
-                    onClick={() => handleUserMenuAction('profile')}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-white/50 transition-colors"
-                  >
-                    <User className="w-4 h-4" />
-                    Perfil
-                  </button>
-                  
-                  <button
-                    onClick={() => handleUserMenuAction('settings')}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-white/50 transition-colors"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Configurações
-                  </button>
-                  
-                  <div className="border-t border-white/10 my-1"></div>
-                  
-                  <button
-                    onClick={() => handleUserMenuAction('logout')}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Sair
-                  </button>
+                  <div>
+                    <h4 className="font-semibold text-lg">Carregar Documento</h4>
+                    <p className="text-white/60 text-sm">Upload e processamento</p>
+                  </div>
                 </div>
-              )}
+                <div className="flex items-center justify-between">
+                  <span className="text-blue-400 text-sm">Processar arquivos</span>
+                  <ArrowRight className="w-4 h-4 text-blue-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+
+              <button 
+                onClick={() => quickAction('gerar-relatorio')}
+                className="group bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 rounded-2xl p-6 text-white transition-all hover:from-green-500/30 hover:to-green-600/30 hover:scale-105 hover:shadow-lg hover:shadow-green-500/20"
+              >
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-green-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-lg">Gerar Relatório</h4>
+                    <p className="text-white/60 text-sm">Relatórios executivos</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-green-400 text-sm">Criar relatório</span>
+                  <ArrowRight className="w-4 h-4 text-green-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+
+              <button 
+                onClick={() => quickAction('novo-orcamento')}
+                className="group bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 rounded-2xl p-6 text-white transition-all hover:from-purple-500/30 hover:to-purple-600/30 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20"
+              >
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                    <Calculator className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-lg">Novo Orçamento</h4>
+                    <p className="text-white/60 text-sm">Criar orçamento anual</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-purple-400 text-sm">Planejar orçamento</span>
+                  <ArrowRight className="w-4 h-4 text-purple-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+
+              <button 
+                onClick={() => quickAction('ver-alertas')}
+                className="group bg-gradient-to-br from-red-500/20 to-red-600/20 border border-red-500/30 rounded-2xl p-6 text-white transition-all hover:from-red-500/30 hover:to-red-600/30 hover:scale-105 hover:shadow-lg hover:shadow-red-500/20"
+              >
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+                    <Bell className="w-6 h-6 text-red-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-lg">Ver Alertas</h4>
+                    <p className="text-white/60 text-sm">Análise de riscos</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-red-400 text-sm">3 alertas ativos</span>
+                  <ArrowRight className="w-4 h-4 text-red-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
             </div>
           </div>
+
+          {/* Módulos Principais */}
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 mb-10">
+            <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
+              <Database className="w-6 h-6 text-blue-400" />
+              Módulos Principais
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Centro de Controle */}
+              <div 
+                onClick={() => openModule('centro-controle')}
+                className="group bg-white/5 border border-white/10 rounded-2xl p-6 cursor-pointer transition-all hover:bg-white/10 hover:scale-105 hover:shadow-lg hover:shadow-white/10"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                    <Monitor className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-lg">Centro de Controle</h4>
+                    <p className="text-white/60 text-sm">Monitoramento central</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-blue-400 text-sm">agentes ativos</span>
+                  <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+
+              {/* Captura & OCR */}
+              <div 
+                onClick={() => openModule('captura-ocr')}
+                className="group bg-white/5 border border-white/10 rounded-2xl p-6 cursor-pointer transition-all hover:bg-white/10 hover:scale-105 hover:shadow-lg hover:shadow-white/10"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                    <Camera className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-lg">Captura & OCR</h4>
+                    <p className="text-white/60 text-sm">Digitalização e extração</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-green-400 text-sm">docs processados</span>
+                  <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+
+              {/* Classificação PGC-AO */}
+              <div 
+                onClick={() => openModule('classificacao-pgc')}
+                className="group bg-white/5 border border-white/10 rounded-2xl p-6 cursor-pointer transition-all hover:bg-white/10 hover:scale-105 hover:shadow-lg hover:shadow-white/10"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <Tag className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-lg">Classificação PGC-AO</h4>
+                    <p className="text-white/60 text-sm">Mapeamento automático</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-purple-400 text-sm">95% precisão</span>
+                  <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+
+              {/* Gestão Orçamental */}
+              <div 
+                onClick={() => openModule('gestao-orcamental')}
+                className="group bg-white/5 border border-white/10 rounded-2xl p-6 cursor-pointer transition-all hover:bg-white/10 hover:scale-105 hover:shadow-lg hover:shadow-white/10"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-lg">Gestão Orçamental</h4>
+                    <p className="text-white/60 text-sm">Planejamento financeiro</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-yellow-400 text-sm">12 orçamentos</span>
+                  <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+
+              {/* Tesouraria */}
+              <div 
+                onClick={() => openModule('tesouraria')}
+                className="group bg-white/5 border border-white/10 rounded-2xl p-6 cursor-pointer transition-all hover:bg-white/10 hover:scale-105 hover:shadow-lg hover:shadow-white/10"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                    <Banknote className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-lg">Tesouraria</h4>
+                    <p className="text-white/60 text-sm">Gestão de caixa</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-indigo-400 text-sm">8 planos ativos</span>
+                  <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+
+              {/* Análise de Risco */}
+              <div 
+                onClick={() => openModule('analise-risco')}
+                className="group bg-white/5 border border-white/10 rounded-2xl p-6 cursor-pointer transition-all hover:bg-white/10 hover:scale-105 hover:shadow-lg hover:shadow-white/10"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center">
+                    <AlertTriangle className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-lg">Análise de Risco</h4>
+                    <p className="text-white/60 text-sm">Monitoramento de riscos</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-red-400 text-sm">3 riscos críticos</span>
+                  <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+
+              {/* Aprovação */}
+              <div 
+                onClick={() => openModule('aprovacao')}
+                className="group bg-white/5 border border-white/10 rounded-2xl p-6 cursor-pointer transition-all hover:bg-white/10 hover:scale-105 hover:shadow-lg hover:shadow-white/10"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-lg">Aprovação</h4>
+                    <p className="text-white/60 text-sm">Central de aprovações</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-orange-400 text-sm">{estatisticas.orcamentosPendentes} itens pendentes</span>
+                  <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+
+              {/* Execução Orçamental */}
+              <div 
+                onClick={() => openModule('execucao-orcamental')}
+                className="group bg-white/5 border border-white/10 rounded-2xl p-6 cursor-pointer transition-all hover:bg-white/10 hover:scale-105 hover:shadow-lg hover:shadow-white/10"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center">
+                    <BarChart2 className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-lg">Execução Orçamental</h4>
+                    <p className="text-white/60 text-sm">Acompanhamento orçamental</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-teal-400 text-sm">78% executado</span>
+                  <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+
+              {/* Plano em Execução */}
+              <div
+                onClick={() => openModule('plano-execucao')}
+                className="group bg-white/5 border border-white/10 rounded-2xl p-6 cursor-pointer transition-all hover:bg-white/10 hover:scale-105 hover:shadow-lg hover:shadow-white/10"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+                    <Target className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-lg">Plano em Execução</h4>
+                    <p className="text-white/60 text-sm">Execução de planos de tesouraria</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-orange-400 text-sm">5 planos ativos</span>
+                  <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+
+              {/* Relatórios Executivos */}
+              <div 
+                onClick={() => openModule('relatorios-executivos')}
+                className="group bg-white/5 border border-white/10 rounded-2xl p-6 cursor-pointer transition-all hover:bg-white/10 hover:scale-105 hover:shadow-lg hover:shadow-white/10"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center">
+                    <LineChart className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-lg">Relatórios Executivos</h4>
+                    <p className="text-white/60 text-sm">Dashboards gerenciais</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-pink-400 text-sm">12 relatórios</span>
+                  <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+
+              {/* Configuração */}
+              <div 
+                onClick={() => openModule('configuracao')}
+                className="group bg-white/5 border border-white/10 rounded-2xl p-6 cursor-pointer transition-all hover:bg-white/10 hover:scale-105 hover:shadow-lg hover:shadow-white/10"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl flex items-center justify-center">
+                    <Settings className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-lg">Configuração</h4>
+                    <p className="text-white/60 text-sm">Configurações do sistema</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 text-sm">Sistema</span>
+                  <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+
+              {/* Diagnóstico */}
+              <div 
+                onClick={() => openModule('diagnostico')}
+                className="group bg-white/5 border border-white/10 rounded-2xl p-6 cursor-pointer transition-all hover:bg-white/10 hover:scale-105 hover:shadow-lg hover:shadow-white/10"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+                    <Activity className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-lg">Diagnóstico</h4>
+                    <p className="text-white/60 text-sm">Teste de integração</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-orange-400 text-sm">API Status</span>
+                  <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Atividades Recentes */}
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8">
+            <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
+              <Clock className="w-6 h-6 text-green-400" />
+              Atividades Recentes
+            </h3>
+            <div className="space-y-4">
+              {atividadesRecentes.map((atividade) => (
+                <div key={atividade.id} className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-lg">
+                      {getTipoIcon(atividade.tipo)}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-white">{atividade.titulo}</h4>
+                      <p className="text-white/60 text-sm">{atividade.descricao}</p>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-white/50">
+                        <span>por {atividade.usuario}</span>
+                        <span>•</span>
+                        <span>{formatarTempo(atividade.timestamp)}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(atividade.status)}`}>
+                        {atividade.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <footer className="text-center py-10 text-white/40 text-sm border-t border-white/10 mt-16">
+            <p>© 2025 FINANCE PRO - Sistema Integrado de Gestão Financeira</p>
+            <p className="mt-1">Versão 2.0.1 | Última atualização: 18/09/2025</p>   
+          </footer>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto mt-28 px-10 pb-10">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-xl flex items-center justify-center text-2xl mb-4">
-              📄
-            </div>
-            <div className="text-3xl font-bold bg-gradient-to-b from-white to-gray-200 bg-clip-text text-transparent">247</div>
-            <div className="text-sm text-white/60 mb-2">Documentos Processados</div>
-            <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">
-              ↑ 15% vs mês anterior
-            </span>
-          </div>
-          
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#10b981] to-[#059669] rounded-xl flex items-center justify-center text-2xl mb-4">
-              💰
-            </div>
-            <div className="text-3xl font-bold bg-gradient-to-b from-white to-gray-200 bg-clip-text text-transparent">87.3%</div>
-            <div className="text-sm text-white/60 mb-2">Execução Orçamental</div>
-            <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400">
-              ↓ 12.7% do plano
-            </span>
-          </div>
-          
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#f59e0b] to-[#d97706] rounded-xl flex items-center justify-center text-2xl mb-4">
-              📊
-            </div>
-            <div className="text-3xl font-bold bg-gradient-to-b from-white to-gray-200 bg-clip-text text-transparent">1.2</div>
-            <div className="text-sm text-white/60 mb-2">Índice de Liquidez</div>
-            <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">
-              ↑ 0.1 melhor
-            </span>
-          </div>
-          
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#ef4444] to-[#dc2626] rounded-xl flex items-center justify-center text-2xl mb-4">
-              ⚠️
-            </div>
-            <div className="text-3xl font-bold bg-gradient-to-b from-white to-gray-200 bg-clip-text text-transparent">3</div>
-            <div className="text-sm text-white/60 mb-2">Riscos Críticos</div>
-            <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400">
-              ↓ 2 resolvidos
-            </span>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 mb-10">
-          <h3 className="text-lg font-semibold text-white/90 mb-4">Ações Rápidas</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <button 
-              onClick={() => quickAction('upload')}
-              className="py-4 px-5 bg-white/5 border border-white/10 rounded-xl text-white text-sm cursor-pointer transition-all hover:bg-white/10 hover:-translate-y-0.5 flex items-center gap-3"
-            >
-              📤 Carregar Documento
-            </button>
-            <button 
-              onClick={() => quickAction('report')}
-              className="py-4 px-5 bg-white/5 border border-white/10 rounded-xl text-white text-sm cursor-pointer transition-all hover:bg-white/10 hover:-translate-y-0.5 flex items-center gap-3"
-            >
-              📈 Gerar Relatório
-            </button>
-            <button 
-              onClick={() => quickAction('budget')}
-              className="py-4 px-5 bg-white/5 border border-white/10 rounded-xl text-white text-sm cursor-pointer transition-all hover:bg-white/10 hover:-translate-y-0.5 flex items-center gap-3"
-            >
-              💵 Novo Orçamento
-            </button>
-            <button 
-              onClick={() => quickAction('alert')}
-              className="py-4 px-5 bg-white/5 border border-white/10 rounded-xl text-white text-sm cursor-pointer transition-all hover:bg-white/10 hover:-translate-y-0.5 flex items-center gap-3"
-            >
-              🔔 Ver Alertas
-            </button>
-          </div>
-        </div>
-
-        {/* Modules Section */}
-        <section className="mb-10">
-          <h2 className="text-2xl text-white/90 mb-6">Módulos Principais</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Centro de Controle */}
-            <div 
-              onClick={() => openModule('dashboard')}
-              className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-7 cursor-pointer transition-all hover:-translate-y-2 hover:scale-102 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/40 hover:border-white/20 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 transform -translate-x-full group-hover:translate-x-full transition-transform duration-600"></div>
-              <div className="w-14 h-14 bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-xl flex items-center justify-center text-2xl mb-5">
-                🎯
-              </div>
-              <h3 className="text-lg font-semibold mb-3">Centro de Controle</h3>
-              <p className="text-sm text-white/60 leading-relaxed mb-5">Dashboard principal com visão geral de todos os agentes e métricas em tempo real</p>
-              <div className="flex justify-between items-center">
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">5 Agentes Ativos</span>
-                <span className="text-white/40 group-hover:text-white/80 group-hover:translate-x-1 transition-all">→</span>
-              </div>
-            </div>
-
-            {/* Captura de Documentos */}
-            <div 
-              onClick={() => openModule('capture')}
-              className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-7 cursor-pointer transition-all hover:-translate-y-2 hover:scale-102 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/40 hover:border-white/20 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 transform -translate-x-full group-hover:translate-x-full transition-transform duration-600"></div>
-              <div className="w-14 h-14 bg-gradient-to-br from-[#3b82f6] to-[#2563eb] rounded-xl flex items-center justify-center text-2xl mb-5">
-                📸
-              </div>
-              <h3 className="text-lg font-semibold mb-3">Captura & OCR</h3>
-              <p className="text-sm text-white/60 leading-relaxed mb-5">Upload, digitalização e extração automática de texto de documentos financeiros</p>
-              <div className="flex justify-between items-center">
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">99.2% Precisão</span>
-                <span className="text-white/40 group-hover:text-white/80 group-hover:translate-x-1 transition-all">→</span>
-              </div>
-            </div>
-
-            {/* Classificação PGC-AO */}
-            <div 
-              onClick={() => openModule('classification')}
-              className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-7 cursor-pointer transition-all hover:-translate-y-2 hover:scale-102 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/40 hover:border-white/20 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 transform -translate-x-full group-hover:translate-x-full transition-transform duration-600"></div>
-              <div className="w-14 h-14 bg-gradient-to-br from-[#f687b3] to-[#ed64a6] rounded-xl flex items-center justify-center text-2xl mb-5">
-                🏷️
-              </div>
-              <h3 className="text-lg font-semibold mb-3">Classificação PGC-AO</h3>
-              <p className="text-sm text-white/60 leading-relaxed mb-5">Mapeamento inteligente e automático para o Plano Geral de Contabilidade de Angola</p>
-              <div className="flex justify-between items-center">
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">96.5% Confiança</span>
-                <span className="text-white/40 group-hover:text-white/80 group-hover:translate-x-1 transition-all">→</span>
-              </div>
-            </div>
-
-            {/* Orçamento */}
-            <div 
-              onClick={() => openModule('budget')}
-              className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-7 cursor-pointer transition-all hover:-translate-y-2 hover:scale-102 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/40 hover:border-white/20 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 transform -translate-x-full group-hover:translate-x-full transition-transform duration-600"></div>
-              <div className="w-14 h-14 bg-gradient-to-br from-[#10b981] to-[#059669] rounded-xl flex items-center justify-center text-2xl mb-5">
-                📋
-              </div>
-              <h3 className="text-lg font-semibold mb-3">Gestão Orçamental</h3>
-              <p className="text-sm text-white/60 leading-relaxed mb-5">Criação, validação e acompanhamento de orçamentos anuais e mensais</p>
-              <div className="flex justify-between items-center">
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">ORÇ/2025/001</span>
-                <span className="text-white/40 group-hover:text-white/80 group-hover:translate-x-1 transition-all">→</span>
-              </div>
-            </div>
-
-            {/* Tesouraria */}
-            <div 
-              onClick={() => openModule('treasury')}
-              className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-7 cursor-pointer transition-all hover:-translate-y-2 hover:scale-102 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/40 hover:border-white/20 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 transform -translate-x-full group-hover:translate-x-full transition-transform duration-600"></div>
-              <div className="w-14 h-14 bg-gradient-to-br from-[#ed8936] to-[#dd6b20] rounded-xl flex items-center justify-center text-2xl mb-5">
-                💰
-              </div>
-              <h3 className="text-lg font-semibold mb-3">Tesouraria</h3>
-              <p className="text-sm text-white/60 leading-relaxed mb-5">Gestão de fluxo de caixa, liquidez e planeamento financeiro mensal</p>
-              <div className="flex justify-between items-center">
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">2.5M Kz Saldo</span>
-                <span className="text-white/40 group-hover:text-white/80 group-hover:translate-x-1 transition-all">→</span>
-              </div>
-            </div>
-
-            {/* Análise de Riscos */}
-            <div 
-              onClick={() => openModule('risks')}
-              className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-7 cursor-pointer transition-all hover:-translate-y-2 hover:scale-102 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/40 hover:border-white/20 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 transform -translate-x-full group-hover:translate-x-full transition-transform duration-600"></div>
-              <div className="w-14 h-14 bg-gradient-to-br from-[#ef4444] to-[#dc2626] rounded-xl flex items-center justify-center text-2xl mb-5">
-                ⚠️
-              </div>
-              <h3 className="text-lg font-semibold mb-3">Análise de Riscos</h3>
-              <p className="text-sm text-white/60 leading-relaxed mb-5">Identificação, monitoramento e planos de contingência para riscos financeiros</p>
-              <div className="flex justify-between items-center">
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">Score: 75</span>
-                <span className="text-white/40 group-hover:text-white/80 group-hover:translate-x-1 transition-all">→</span>
-              </div>
-            </div>
-
-            {/* Execução Orçamental */}
-            <div 
-              onClick={() => openModule('execution')}
-              className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-7 cursor-pointer transition-all hover:-translate-y-2 hover:scale-102 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/40 hover:border-white/20 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 transform -translate-x-full group-hover:translate-x-full transition-transform duration-600"></div>
-              <div className="w-14 h-14 bg-gradient-to-br from-[#48bb78] to-[#38a169] rounded-xl flex items-center justify-center text-2xl mb-5">
-                📊
-              </div>
-              <h3 className="text-lg font-semibold mb-3">Execução Orçamental</h3>
-              <p className="text-sm text-white/60 leading-relaxed mb-5">Comparação em tempo real entre orçado e realizado com análise de desvios</p>
-              <div className="flex justify-between items-center">
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">87.3% Executado</span>
-                <span className="text-white/40 group-hover:text-white/80 group-hover:translate-x-1 transition-all">→</span>
-              </div>
-            </div>
-
-            {/* Relatórios */}
-            <div 
-              onClick={() => openModule('reports')}
-              className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-7 cursor-pointer transition-all hover:-translate-y-2 hover:scale-102 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/40 hover:border-white/20 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 transform -translate-x-full group-hover:translate-x-full transition-transform duration-600"></div>
-              <div className="w-14 h-14 bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] rounded-xl flex items-center justify-center text-2xl mb-5">
-                📑
-              </div>
-              <h3 className="text-lg font-semibold mb-3">Relatórios Executivos</h3>
-              <p className="text-sm text-white/60 leading-relaxed mb-5">Geração automática de relatórios consolidados e dashboards executivos</p>
-              <div className="flex justify-between items-center">
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">12 Modelos</span>
-                <span className="text-white/40 group-hover:text-white/80 group-hover:translate-x-1 transition-all">→</span>
-              </div>
-            </div>
-
-            {/* Configurações */}
-            <div 
-              onClick={() => openModule('settings')}
-              className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-7 cursor-pointer transition-all hover:-translate-y-2 hover:scale-102 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/40 hover:border-white/20 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 transform -translate-x-full group-hover:translate-x-full transition-transform duration-600"></div>
-              <div className="w-14 h-14 bg-gradient-to-br from-[#6b7280] to-[#4b5563] rounded-xl flex items-center justify-center text-2xl mb-5">
-                ⚙️
-              </div>
-              <h3 className="text-lg font-semibold mb-3">Configurações</h3>
-              <p className="text-sm text-white/60 leading-relaxed mb-5">Gestão de utilizadores, permissões e parametrização do sistema</p>
-              <div className="flex justify-between items-center">
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">Sistema</span>
-                <span className="text-white/40 group-hover:text-white/80 group-hover:translate-x-1 transition-all">→</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Recent Activity */}
-        <section>
-          <h2 className="text-2xl text-white/90 mb-6">Atividade Recente</h2>
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
-                <span className="text-xl">✅</span>
-                <div className="flex-1">
-                  <div className="text-sm text-white">Factura #2025-142 processada com sucesso</div>
-                  <div className="text-xs text-white/50 mt-1">Há 2 minutos</div>
-                </div>
-                <span className="text-green-400 text-sm">Classificado: 714</span>
-              </div>
-              
-              <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
-                <span className="text-xl">⚠️</span>
-                <div className="flex-1">
-                  <div className="text-sm text-white">Alerta: Liquidez crítica prevista para dia 25</div>
-                  <div className="text-xs text-white/50 mt-1">Há 15 minutos</div>
-                </div>
-                <span className="text-yellow-400 text-sm">Ação Requerida</span>
-              </div>
-              
-              <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
-                <span className="text-xl">📊</span>
-                <div className="flex-1">
-                  <div className="text-sm text-white">Relatório mensal de Outubro gerado</div>
-                  <div className="text-xs text-white/50 mt-1">Há 1 hora</div>
-                </div>
-                <span className="text-purple-400 text-sm">PDF Disponível</span>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="text-center py-10 text-white/40 text-sm border-t border-white/10 mt-16">
-        <p>© 2025 FINANCE PRO - Sistema Multi-Agente com Conformidade PGC-AO</p>
-        <p className="mt-1">Versão 2.0.1 | Última atualização: 18/09/2025</p>
-      </footer>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

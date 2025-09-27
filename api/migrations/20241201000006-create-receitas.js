@@ -38,11 +38,6 @@ module.exports = {
         allowNull: false,
         comment: 'Valor da receita'
       },
-      mes: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        comment: 'Mês da receita (1-12)'
-      },
       orcamentoId: {
         type: Sequelize.INTEGER,
         allowNull: false,

@@ -5,28 +5,30 @@
  * baseado nas rotas e controladores reais do sistema.
  * 
  * @author Antonio Emiliano Barros
- * @version 2.0.0
+ * @version 2.1.0
  */
 
-// Configuração base da API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Importa as configurações da API
+import { API_CONFIG, API_ENDPOINTS } from '../config/apiConfig';
 
 /**
  * Classe para gerenciar requisições HTTP
  */
 class ApiClient {
   constructor() {
-    this.baseURL = API_BASE_URL;
+    this.baseURL = API_CONFIG.API_BASE_URL;
     this.defaultHeaders = {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
     };
+    this.timeout = API_CONFIG.TIMEOUT;
   }
 
   /**
    * Obtém o token de autenticação do localStorage
    */
   getAuthToken() {
-    return localStorage.getItem('authToken');
+    return localStorage.getItem(API_CONFIG.AUTH.TOKEN_KEY);
   }
 
   /**
@@ -38,7 +40,7 @@ class ApiClient {
     if (includeAuth) {
       const token = this.getAuthToken();
       if (token) {
-        headers.Authorization = `Bearer ${token}`;
+        headers.Authorization = `${API_CONFIG.AUTH.TOKEN_PREFIX}${token}`;
       }
     }
     
@@ -50,26 +52,40 @@ class ApiClient {
    */
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    
     const config = {
-      headers: this.getHeaders(options.includeAuth !== false),
       ...options,
+      headers: this.getHeaders(options.includeAuth !== false),
+      signal: controller.signal,
     };
 
     try {
       console.log(`📤 ${config.method || 'GET'} ${url}`);
       if (config.body) {
-        console.log('📦 Body:', JSON.parse(config.body));
+        console.log('📦 Body:', typeof config.body === 'string' ? JSON.parse(config.body) : config.body);
       }
 
       const response = await fetch(url, config);
+      clearTimeout(timeoutId);
       
       console.log(`📥 Response Status: ${response.status}`);
       
       // Verifica se a resposta é válida
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('❌ Error Response:', errorData);
-        throw new Error(errorData.message || `HTTP Error: ${response.status}`);
+        let errorData = {};
+        try {
+          errorData = await response.json();
+          console.error('❌ Error Response:', errorData);
+        } catch (e) {
+          console.error('❌ Error parsing error response:', e);
+        }
+        
+        const error = new Error(errorData.message || `HTTP Error: ${response.status}`);
+        error.status = response.status;
+        error.data = errorData;
+        throw error;
       }
 
       // Retorna os dados se a resposta não estiver vazia
@@ -135,22 +151,33 @@ const apiClient = new ApiClient();
 /**
  * API de Autenticação - Baseada em auth.routes.js e auth.controller.js
  */
-export const authApi = {
+const authApi = {
   /**
    * Registra um novo usuário
    * @param {Object} userData - Dados do usuário (name, email, password, companyName)
    * @returns {Promise<Object>} Dados do usuário e token
    */
   async register(userData) {
-    const response = await apiClient.post('/auth/register', userData, { includeAuth: false });
-    
-    // Salvar token se retornado
-    if (response.data?.token) {
-      localStorage.setItem('authToken', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    try {
+      const response = await apiClient.post(
+        API_ENDPOINTS.AUTH.REGISTER,
+        userData,
+        { includeAuth: false }
+      );
+      
+      // Salvar token se retornado
+      if (response.data?.token) {
+        localStorage.setItem(API_CONFIG.AUTH.TOKEN_KEY, response.data.token);
+        if (response.data.user) {
+          localStorage.setItem(API_CONFIG.AUTH.USER_KEY, JSON.stringify(response.data.user));
+        }
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Erro no registro:', error);
+      throw error;
     }
-    
-    return response;
   },
 
   /**
@@ -159,15 +186,24 @@ export const authApi = {
    * @returns {Promise<Object>} Dados do usuário e token
    */
   async login(credentials) {
-    const response = await apiClient.post('/auth/login', credentials, { includeAuth: false });
-    
-    // Salvar token baseado na estrutura real do controlador (auth.controller.js)
-    if (response.status === 'success' && response.data?.token) {
-      localStorage.setItem('authToken', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials, {
+        includeAuth: false
+      });
+      
+      // Salvar token baseado na estrutura real do controlador (auth.controller.js)
+      if (response.status === 'success' && response.data?.token) {
+        localStorage.setItem(API_CONFIG.AUTH.TOKEN_KEY, response.data.token);
+        if (response.data.user) {
+          localStorage.setItem(API_CONFIG.AUTH.USER_KEY, JSON.stringify(response.data.user));
+        }
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Erro no login:', error);
+      throw error;
     }
-    
-    return response;
   },
 
   /**
@@ -175,7 +211,12 @@ export const authApi = {
    * @returns {Promise<Object>} Dados do usuário
    */
   async getMe() {
-    return apiClient.get('/auth/me');
+    try {
+      return await apiClient.get(API_ENDPOINTS.AUTH.ME);
+    } catch (error) {
+      console.error('Erro ao obter dados do usuário:', error);
+      throw error;
+    }
   },
 
   /**
@@ -184,7 +225,16 @@ export const authApi = {
    * @returns {Promise<Object>} Resposta da API
    */
   async forgotPassword(email) {
-    return apiClient.post('/auth/forgot-password', { email }, { includeAuth: false });
+    try {
+      return await apiClient.post(
+        API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
+        { email },
+        { includeAuth: false }
+      );
+    } catch (error) {
+      console.error('Erro ao solicitar recuperação de senha:', error);
+      throw error;
+    }
   },
 
   /**
@@ -194,7 +244,16 @@ export const authApi = {
    * @returns {Promise<Object>} Resposta da API
    */
   async resetPassword(token, password) {
-    return apiClient.patch(`/auth/reset-password/${token}`, { password }, { includeAuth: false });
+    try {
+      return await apiClient.patch(
+        `${API_ENDPOINTS.AUTH.RESET_PASSWORD}/${token}`,
+        { password },
+        { includeAuth: false }
+      );
+    } catch (error) {
+      console.error('Erro ao redefinir senha:', error);
+      throw error;
+    }
   },
 
   /**
@@ -204,38 +263,56 @@ export const authApi = {
    * @returns {Promise<Object>} Resposta da API
    */
   async updatePassword(currentPassword, newPassword) {
-    const response = await apiClient.patch('/auth/update-password', {
-      currentPassword,
-      newPassword
-    });
+    try {
+      const response = await apiClient.patch(
+        API_ENDPOINTS.AUTH.UPDATE_PASSWORD,
+        { currentPassword, newPassword }
+      );
 
-    // Atualizar token se retornado
-    if (response.token) {
-      localStorage.setItem('authToken', response.token);
+      // Atualizar token se retornado
+      if (response.data?.token) {
+        localStorage.setItem(API_CONFIG.AUTH.TOKEN_KEY, response.data.token);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Erro ao atualizar senha:', error);
+      throw error;
     }
-
-    return response;
   },
 
   /**
    * Realiza logout do usuário
+   * @returns {Promise<void>}
    */
   async logout() {
     try {
-      // Não há endpoint de logout no backend, apenas limpa dados locais
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
+      await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
     } catch (error) {
-      console.error('Erro no logout:', error);
+      console.error('Erro ao fazer logout:', error);
+      throw error;
+    } finally {
+      localStorage.removeItem(API_CONFIG.AUTH.TOKEN_KEY);
+      localStorage.removeItem(API_CONFIG.AUTH.USER_KEY);
     }
   },
 
   /**
    * Verifica se o usuário está autenticado
-   * @returns {boolean} True se autenticado
+   * @returns {boolean} Verdadeiro se o token for válido e não estiver expirado
    */
-  isAuthenticated() {
-    return !!localStorage.getItem('authToken');
+  isAuthenticated: function() {
+    const token = this.getToken();
+    if (!token) return false;
+    
+    try {
+      // Verifica se o token JWT está expirado
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000 > Date.now();
+    } catch (e) {
+      console.error('Erro ao verificar token:', e);
+      return false;
+    }
   },
 
   /**
@@ -243,7 +320,7 @@ export const authApi = {
    * @returns {string|null} Token ou null
    */
   getToken() {
-    return localStorage.getItem('authToken');
+    return localStorage.getItem(API_CONFIG.AUTH.TOKEN_KEY);
   },
 
   /**
@@ -251,8 +328,13 @@ export const authApi = {
    * @returns {Object|null} Dados do usuário ou null
    */
   getUser() {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    try {
+      const user = localStorage.getItem(API_CONFIG.AUTH.USER_KEY);
+      return user ? JSON.parse(user) : null;
+    } catch (e) {
+      console.error('Erro ao recuperar dados do usuário:', e);
+      return null;
+    }
   }
 };
 
@@ -265,7 +347,7 @@ export const authApi = {
 /**
  * API de Orçamentos - Baseada em orcamento.routes.js e orcamento.controller.js
  */
-export const orcamentoApi = {
+const orcamentoApi = {
   /**
    * Lista todos os orçamentos com filtros e paginação
    * @param {Object} params - Parâmetros de filtro (status, busca, pagina, limite, etc.)
@@ -364,6 +446,19 @@ export const orcamentoApi = {
 
     const endpoint = `/orcamentos/estatisticas${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return apiClient.get(endpoint);
+  },
+
+  /**
+   * Obtém o orçamento aprovado para um ano específico
+   * @param {Object} params - Parâmetros (ano)
+   * @returns {Promise<Object>} Orçamento aprovado
+   */
+  async obterOrcamentoAprovado(params = {}) {
+    const queryParams = new URLSearchParams();
+    if (params.ano) queryParams.append('ano', params.ano);
+
+    const endpoint = `/orcamentos/aprovado${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
   }
 };
 
@@ -376,7 +471,7 @@ export const orcamentoApi = {
 /**
  * API de Tesouraria - Baseada em tesouraria.routes.js e tesouraria.controller.js
  */
-export const tesourariaApi = {
+const tesourariaApi = {
   /**
    * Lista os planos de tesouraria
    * @param {Object} params - Parâmetros de filtro (ano, mes, status, pagina, limite)
@@ -410,8 +505,8 @@ export const tesourariaApi = {
    * @param {Object} dadosFormulario - Dados completos do formulário
    * @returns {Promise<Object>} Plano criado
    */
-  async criarPlanoCompleto(dadosFormulario) {
-    return apiClient.post('/tesouraria/novo-plano', dadosFormulario);
+  async criarPlanoComDados(dadosPlano) {
+    return apiClient.post('/tesouraria/planos/completo', dadosPlano);
   },
 
   /**
@@ -492,6 +587,44 @@ export const tesourariaApi = {
     const dados = { orcamentoId };
     if (mesReferencia) dados.mesReferencia = mesReferencia;
     return apiClient.post(`/tesouraria/planos/${id}/importar-orcamento`, dados);
+  },
+
+  /**
+   * Lista planos de tesouraria por orçamento específico
+   * @param {Object} params - Parâmetros de filtro (orcamentoId, pagina, limite, ordenacao)
+   * @returns {Promise<Object>} Lista paginada de planos
+   */
+  async listarPlanosPorOrcamento(params = {}) {
+    const queryParams = new URLSearchParams();
+
+    const validParams = ['orcamentoId', 'pagina', 'limite', 'ordenacao'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/tesouraria/planos-por-orcamento${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Obtém atividades recentes relacionadas à execução orçamental
+   * @param {Object} params - Parâmetros (limite)
+   * @returns {Promise<Object>} Lista de atividades recentes
+   */
+  async obterAtividadesRecentes(params = {}) {
+    const queryParams = new URLSearchParams();
+
+    const validParams = ['limite'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/tesouraria/atividades-recentes${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
   }
 };
 
@@ -504,7 +637,7 @@ export const tesourariaApi = {
 /**
  * API de Usuários - Baseada em usuario.controller.js
  */
-export const usuarioApi = {
+const usuarioApi = {
   /**
    * Lista todos os usuários (apenas admin)
    * @param {Object} params - Parâmetros de filtro
@@ -578,6 +711,651 @@ export const usuarioApi = {
 
 /**
  * ========================================
+ * SERVIÇOS DE PGC-AO
+ * ========================================
+ */
+
+/**
+ * API de PGC-AO - Classificação e Validação de Contas
+ */
+const pgcApi = {
+  /**
+   * Lista documentos pendentes de classificação
+   * @param {Object} params - Parâmetros de filtro
+   * @returns {Promise<Object>} Lista paginada de documentos
+   */
+  async listarDocumentosPendentes(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['status', 'tipo', 'confianca', 'pagina', 'limite', 'busca'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/pgc/documentos${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Classifica um documento como Receita ou Custo
+   * @param {string|number} documentoId - ID do documento
+   * @param {Object} classificacao - Dados da classificação
+   * @returns {Promise<Object>} Confirmação da classificação
+   */
+  async classificarDocumento(documentoId, classificacao) {
+    return apiClient.post(`/pgc/documentos/${documentoId}/classificar`, classificacao);
+  },
+
+  /**
+   * Lista mapeamentos de contas PGC-AO
+   * @param {Object} params - Parâmetros de filtro
+   * @returns {Promise<Object>} Lista paginada de mapeamentos
+   */
+  async listarMapeamentos(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['tipo', 'contaPgc', 'status', 'pagina', 'limite', 'busca'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/pgc/mapeamentos${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Cria um novo mapeamento de conta PGC-AO
+   * @param {Object} mapeamento - Dados do mapeamento
+   * @returns {Promise<Object>} Mapeamento criado
+   */
+  async criarMapeamento(mapeamento) {
+    return apiClient.post('/pgc/mapeamentos', mapeamento);
+  },
+
+  /**
+   * Atualiza um mapeamento de conta PGC-AO
+   * @param {string|number} id - ID do mapeamento
+   * @param {Object} mapeamento - Dados atualizados
+   * @returns {Promise<Object>} Mapeamento atualizado
+   */
+  async atualizarMapeamento(id, mapeamento) {
+    return apiClient.put(`/pgc/mapeamentos/${id}`, mapeamento);
+  },
+
+  /**
+   * Remove um mapeamento de conta PGC-AO
+   * @param {string|number} id - ID do mapeamento
+   * @returns {Promise<Object>} Confirmação da remoção
+   */
+  async removerMapeamento(id) {
+    return apiClient.delete(`/pgc/mapeamentos/${id}`);
+  },
+
+  /**
+   * Valida uma classificação PGC-AO
+   * @param {string|number} documentoId - ID do documento
+   * @param {Object} validacao - Dados da validação
+   * @returns {Promise<Object>} Confirmação da validação
+   */
+  async validarClassificacao(documentoId, validacao) {
+    return apiClient.post(`/pgc/documentos/${documentoId}/validar`, validacao);
+  },
+
+  /**
+   * Lista contas PGC-AO disponíveis
+   * @param {Object} params - Parâmetros de filtro
+   * @returns {Promise<Object>} Lista de contas PGC-AO
+   */
+  async listarContasPGC(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['categoria', 'busca', 'pagina', 'limite'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/pgc/contas${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Obtém estatísticas de classificação PGC-AO
+   * @param {Object} params - Parâmetros de filtro
+   * @returns {Promise<Object>} Estatísticas
+   */
+  async obterEstatisticas(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['periodo', 'tipo', 'status'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/pgc/estatisticas${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Exporta dados de classificação PGC-AO
+   * @param {Object} params - Parâmetros de exportação
+   * @returns {Promise<Object>} Dados para exportação
+   */
+  async exportarDados(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['formato', 'periodo', 'tipo', 'status'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/pgc/exportar${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Processa lote de documentos para classificação
+   * @param {Array} documentoIds - IDs dos documentos
+   * @param {Object} configuracao - Configuração do processamento
+   * @returns {Promise<Object>} Resultado do processamento
+   */
+  async processarLote(documentoIds, configuracao = {}) {
+    return apiClient.post('/pgc/processar-lote', {
+      documentoIds,
+      configuracao
+    });
+  },
+
+  /**
+   * Obtém histórico de classificações
+   * @param {Object} params - Parâmetros de filtro
+   * @returns {Promise<Object>} Lista paginada do histórico
+   */
+  async obterHistorico(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['documentoId', 'usuarioId', 'dataInicio', 'dataFim', 'pagina', 'limite'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/pgc/historico${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  }
+};
+
+/**
+ * ========================================
+ * SERVIÇOS DE APROVAÇÃO CENTRALIZADA
+ * ========================================
+ */
+
+/**
+ * API de Aprovação Centralizada - Para a página de Aprovação
+ */
+const aprovacaoApi = {
+  /**
+   * Lista todos os itens pendentes de aprovação (orçamentos e planos)
+   * @param {Object} params - Parâmetros de filtro
+   * @returns {Promise<Object>} Lista paginada de itens pendentes
+   */
+  async listarItensPendentes(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['tipo', 'status', 'departamento', 'dataInicio', 'dataFim', 'pagina', 'limite', 'busca'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/aprovacao/pendentes${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Aprova um item (orçamento ou plano)
+   * @param {string|number} itemId - ID do item
+   * @param {string} tipo - Tipo do item ('orcamento' ou 'plano')
+   * @param {string} observacoes - Observações da aprovação (opcional)
+   * @returns {Promise<Object>} Item aprovado
+   */
+  async aprovarItem(itemId, tipo, observacoes = '') {
+    return apiClient.patch(`/aprovacao/${tipo}/${itemId}/aprovar`, { observacoes });
+  },
+
+  /**
+   * Rejeita um item (orçamento ou plano)
+   * @param {string|number} itemId - ID do item
+   * @param {string} tipo - Tipo do item ('orcamento' ou 'plano')
+   * @param {string} motivo - Motivo da rejeição
+   * @returns {Promise<Object>} Item rejeitado
+   */
+  async rejeitarItem(itemId, tipo, motivo) {
+    return apiClient.patch(`/aprovacao/${tipo}/${itemId}/rejeitar`, { motivo });
+  },
+
+  /**
+   * Aprova múltiplos itens em lote
+   * @param {Array} itens - Array de itens para aprovar [{id, tipo, observacoes}]
+   * @returns {Promise<Object>} Resultado da aprovação em lote
+   */
+  async aprovarLote(itens) {
+    return apiClient.post('/aprovacao/aprovar-lote', { itens });
+  },
+
+  /**
+   * Rejeita múltiplos itens em lote
+   * @param {Array} itens - Array de itens para rejeitar [{id, tipo, motivo}]
+   * @returns {Promise<Object>} Resultado da rejeição em lote
+   */
+  async rejeitarLote(itens) {
+    return apiClient.post('/aprovacao/rejeitar-lote', { itens });
+  },
+
+  /**
+   * Obtém estatísticas de aprovação
+   * @param {Object} filtros - Filtros de período
+   * @returns {Promise<Object>} Estatísticas de aprovação
+   */
+  async obterEstatisticas(filtros = {}) {
+    const queryParams = new URLSearchParams();
+    if (filtros.dataInicio) queryParams.append('dataInicio', filtros.dataInicio);
+    if (filtros.dataFim) queryParams.append('dataFim', filtros.dataFim);
+    if (filtros.departamento) queryParams.append('departamento', filtros.departamento);
+
+    const endpoint = `/aprovacao/estatisticas${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Obtém histórico de aprovações
+   * @param {Object} params - Parâmetros de filtro
+   * @returns {Promise<Object>} Lista paginada do histórico
+   */
+  async obterHistorico(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['tipo', 'status', 'usuarioId', 'dataInicio', 'dataFim', 'pagina', 'limite'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/aprovacao/historico${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  }
+};
+
+/**
+ * ========================================
+ * SERVIÇOS DE VALIDAÇÃO DE CONTAS PGC
+ * ========================================
+ */
+
+/**
+ * API de Validação de Contas PGC
+ */
+const validacaoContasApi = {
+  /**
+   * Lista contas PGC para validação
+   * @param {Object} params - Parâmetros de filtro
+   * @returns {Promise<Object>} Lista paginada de contas PGC
+   */
+  async listarContasPGC(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['classe', 'status', 'tipo', 'busca', 'pagina', 'limite'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/validacao-contas/contas${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Valida uma conta PGC
+   * @param {string|number} contaId - ID da conta
+   * @param {Object} validacao - Dados da validação
+   * @returns {Promise<Object>} Conta validada
+   */
+  async validarConta(contaId, validacao) {
+    return apiClient.patch(`/validacao-contas/contas/${contaId}/validar`, validacao);
+  },
+
+  /**
+   * Rejeita uma conta PGC
+   * @param {string|number} contaId - ID da conta
+   * @param {string} motivo - Motivo da rejeição
+   * @returns {Promise<Object>} Conta rejeitada
+   */
+  async rejeitarConta(contaId, motivo) {
+    return apiClient.patch(`/validacao-contas/contas/${contaId}/rejeitar`, { motivo });
+  },
+
+  /**
+   * Obtém detalhes de uma conta PGC
+   * @param {string|number} contaId - ID da conta
+   * @returns {Promise<Object>} Detalhes da conta
+   */
+  async obterConta(contaId) {
+    return apiClient.get(`/validacao-contas/contas/${contaId}`);
+  },
+
+  /**
+   * Obtém estatísticas de validação de contas
+   * @param {Object} filtros - Filtros de período
+   * @returns {Promise<Object>} Estatísticas de validação
+   */
+  async obterEstatisticas(filtros = {}) {
+    const queryParams = new URLSearchParams();
+    if (filtros.dataInicio) queryParams.append('dataInicio', filtros.dataInicio);
+    if (filtros.dataFim) queryParams.append('dataFim', filtros.dataFim);
+    if (filtros.classe) queryParams.append('classe', filtros.classe);
+
+    const endpoint = `/validacao-contas/estatisticas${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Exporta relatório de validação
+   * @param {Object} params - Parâmetros de exportação
+   * @returns {Promise<Blob>} Arquivo do relatório
+   */
+  async exportarRelatorio(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['formato', 'periodo', 'classe', 'status'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const response = await fetch(`${API_CONFIG.API_BASE_URL}/validacao-contas/exportar?${queryParams.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${apiClient.getAuthToken()}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Erro ao exportar relatório: ${response.statusText}`);
+    }
+    
+    return response.blob();
+  },
+
+};
+
+/**
+ * ========================================
+ * SERVIÇOS DE UPLOAD E PROCESSAMENTO
+ * ========================================
+ */
+
+/**
+ * API de Upload e Processamento de Documentos
+ */
+const uploadApi = {
+  /**
+   * Faz upload de um arquivo
+   * @param {File} arquivo - Arquivo para upload
+   * @param {Object} metadados - Metadados do arquivo
+   * @returns {Promise<Object>} Resultado do upload
+   */
+  async uploadArquivo(arquivo, metadados = {}) {
+    const formData = new FormData();
+    formData.append('arquivo', arquivo);
+    
+    // Adicionar metadados se fornecidos
+    Object.entries(metadados).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value);
+      }
+    });
+
+    return apiClient.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  /**
+   * Faz upload de múltiplos arquivos
+   * @param {FileList|Array} arquivos - Arquivos para upload
+   * @param {Object} metadados - Metadados dos arquivos
+   * @returns {Promise<Object>} Resultado do upload em lote
+   */
+  async uploadMultiplosArquivos(arquivos, metadados = {}) {
+    const formData = new FormData();
+    
+    // Adicionar todos os arquivos
+    Array.from(arquivos).forEach((arquivo) => {
+      formData.append(`arquivos`, arquivo);
+    });
+    
+    // Adicionar metadados se fornecidos
+    Object.entries(metadados).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value);
+      }
+    });
+
+    return apiClient.post('/upload/lote', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  /**
+   * Lista arquivos enviados
+   * @param {Object} params - Parâmetros de filtro
+   * @returns {Promise<Object>} Lista paginada de arquivos
+   */
+  async listarArquivos(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['status', 'tipo', 'dataInicio', 'dataFim', 'pagina', 'limite', 'busca'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/upload/arquivos${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Obtém detalhes de um arquivo específico
+   * @param {string|number} arquivoId - ID do arquivo
+   * @returns {Promise<Object>} Detalhes do arquivo
+   */
+  async obterArquivo(arquivoId) {
+    return apiClient.get(`/upload/arquivos/${arquivoId}`);
+  },
+
+  /**
+   * Remove um arquivo
+   * @param {string|number} arquivoId - ID do arquivo
+   * @returns {Promise<Object>} Confirmação da remoção
+   */
+  async removerArquivo(arquivoId) {
+    return apiClient.delete(`/upload/arquivos/${arquivoId}`);
+  },
+
+  /**
+   * Processa um arquivo (OCR e extração de texto)
+   * @param {string|number} arquivoId - ID do arquivo
+   * @param {Object} configuracao - Configuração do processamento
+   * @returns {Promise<Object>} Resultado do processamento
+   */
+  async processarArquivo(arquivoId, configuracao = {}) {
+    return apiClient.post(`/upload/arquivos/${arquivoId}/processar`, configuracao);
+  },
+
+  /**
+   * Reprocessa um arquivo
+   * @param {string|number} arquivoId - ID do arquivo
+   * @param {Object} configuracao - Nova configuração
+   * @returns {Promise<Object>} Resultado do reprocessamento
+   */
+  async reprocessarArquivo(arquivoId, configuracao = {}) {
+    return apiClient.post(`/upload/arquivos/${arquivoId}/reprocessar`, configuracao);
+  },
+
+  /**
+   * Obtém status do processamento de um arquivo
+   * @param {string|number} arquivoId - ID do arquivo
+   * @returns {Promise<Object>} Status do processamento
+   */
+  async obterStatusProcessamento(arquivoId) {
+    return apiClient.get(`/upload/arquivos/${arquivoId}/status`);
+  },
+
+  /**
+   * Baixa um arquivo processado
+   * @param {string|number} arquivoId - ID do arquivo
+   * @param {string} formato - Formato de download (original, pdf, txt)
+   * @returns {Promise<Blob>} Arquivo para download
+   */
+  async baixarArquivo(arquivoId, formato = 'original') {
+    const response = await fetch(`${API_CONFIG.API_BASE_URL}/upload/arquivos/${arquivoId}/download?formato=${formato}`, {
+      headers: {
+        'Authorization': `Bearer ${apiClient.getAuthToken()}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Erro ao baixar arquivo: ${response.statusText}`);
+    }
+    
+    return response.blob();
+  },
+
+  /**
+   * Lista documentos para classificação
+   * @param {Object} params - Parâmetros de filtro
+   * @returns {Promise<Object>} Lista de documentos para classificação
+   */
+  async listarDocumentosParaClassificacao(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['status', 'tipo', 'confianca', 'pagina', 'limite', 'busca'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/upload/documentos-classificacao${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Obtém texto extraído de um arquivo
+   * @param {string|number} arquivoId - ID do arquivo
+   * @returns {Promise<Object>} Texto extraído
+   */
+  async obterTextoExtraido(arquivoId) {
+    return apiClient.get(`/upload/arquivos/${arquivoId}/texto`);
+  },
+
+  /**
+   * Obtém estatísticas de upload e processamento
+   * @param {Object} params - Parâmetros de filtro
+   * @returns {Promise<Object>} Estatísticas
+   */
+  async obterEstatisticas(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['periodo', 'tipo', 'status'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/upload/estatisticas${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Processa lote de arquivos
+   * @param {Array} arquivoIds - IDs dos arquivos
+   * @param {Object} configuracao - Configuração do processamento
+   * @returns {Promise<Object>} Resultado do processamento em lote
+   */
+  async processarLote(arquivoIds, configuracao = {}) {
+    return apiClient.post('/upload/processar-lote', {
+      arquivoIds,
+      configuracao
+    });
+  },
+
+  /**
+   * Obtém histórico de uploads
+   * @param {Object} params - Parâmetros de filtro
+   * @returns {Promise<Object>} Lista paginada do histórico
+   */
+  async obterHistorico(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    const validParams = ['usuarioId', 'dataInicio', 'dataFim', 'status', 'pagina', 'limite'];
+    validParams.forEach(param => {
+      if (params[param] !== undefined && params[param] !== null && params[param] !== '') {
+        queryParams.append(param, params[param]);
+      }
+    });
+
+    const endpoint = `/upload/historico${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get(endpoint);
+  },
+
+  /**
+   * Valida formato de arquivo
+   * @param {File} arquivo - Arquivo para validar
+   * @returns {Promise<Object>} Resultado da validação
+   */
+  async validarFormatoArquivo(arquivo) {
+    const formData = new FormData();
+    formData.append('arquivo', arquivo);
+
+    return apiClient.post('/upload/validar-formato', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  /**
+   * Obtém tipos de arquivo suportados
+   * @returns {Promise<Object>} Lista de tipos suportados
+   */
+  async obterTiposSuportados() {
+    return apiClient.get('/upload/tipos-suportados');
+  }
+};
+
+/**
+ * ========================================
  * UTILITÁRIOS
  * ========================================
  */
@@ -585,7 +1363,7 @@ export const usuarioApi = {
 /**
  * Utilitários para manipulação de dados da API
  */
-export const apiUtils = {
+const apiUtils = {
   /**
    * Formata erros da API para exibição
    * @param {Error} error - Erro da API
@@ -686,5 +1464,65 @@ const setupApiInterceptors = () => {
 // Configurar interceptadores
 setupApiInterceptors();
 
+// Importa os serviços adicionais
+import aprovacaoService from './aprovacaoService';
+import validacaoContasService from './validacaoContasService';
+import tesourariaService from './tesourariaService';
+
+// Exporta todos os serviços
+const api = {
+  // Cliente HTTP base
+  apiClient,
+  
+  // Serviços de autenticação
+  auth: authApi,
+  
+  // Serviços de orçamento
+  orcamento: orcamentoApi,
+  
+  // Serviços de tesouraria
+  tesouraria: tesourariaApi,
+  
+  // Serviços de usuário
+  usuario: usuarioApi,
+  
+  // Serviços PGC-AO
+  pgc: pgcApi,
+  
+  // Serviços de aprovação
+  aprovacao: aprovacaoApi,
+  aprovacaoService, // Novo serviço de aprovação
+  
+  // Serviços de validação de contas
+  validacaoContas: validacaoContasApi,
+  validacaoContasService, // Novo serviço de validação de contas
+  
+  // Serviços de upload
+  upload: uploadApi,
+  
+  // Utilitários
+  utils: apiUtils,
+  
+  // Serviço de tesouraria (novo)
+  tesourariaService
+};
+
 // Exporta o cliente API para uso direto se necessário
-export default apiClient;
+export default api;
+
+// Exportações nomeadas para compatibilidade com imports existentes
+export {
+  apiClient,
+  authApi,
+  orcamentoApi,
+  tesourariaApi,
+  usuarioApi,
+  pgcApi,
+  aprovacaoApi,
+  validacaoContasApi,
+  uploadApi,
+  apiUtils,
+  aprovacaoService,
+  validacaoContasService,
+  tesourariaService
+};

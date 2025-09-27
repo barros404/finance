@@ -474,6 +474,274 @@ class PGCMappingService {
   }
 
   /**
+   * Processa texto extraído de documento e mapeia para PGC-AO
+   * @param {string} textoExtraido - Texto extraído do documento
+   * @returns {Object} Resultado do mapeamento
+   */
+  async processarTexto(textoExtraido) {
+    try {
+      logger.info('Iniciando processamento de texto para mapeamento PGC-AO');
+
+      // Extrair informações financeiras do texto
+      const informacoesFinanceiras = this.extrairInformacoesFinanceiras(textoExtraido);
+      
+      // Mapear cada item identificado
+      const itensMapeados = [];
+      
+      for (const item of informacoesFinanceiras.itens) {
+        const mapeamento = this.mapearItemTexto(item);
+        itensMapeados.push({
+          ...item,
+          pgcMapping: mapeamento
+        });
+      }
+
+      // Calcular estatísticas
+      const estatisticas = this.calcularEstatisticasTexto(itensMapeados);
+      
+      // Gerar resumo por classe
+      const resumoPorClasse = this.gerarResumoPorClasseTexto(itensMapeados);
+
+      const resultado = {
+        textoOriginal: textoExtraido,
+        informacoesExtraidas: informacoesFinanceiras,
+        itensMapeados: itensMapeados,
+        estatisticas: estatisticas,
+        resumoPorClasse: resumoPorClasse,
+        conformidade: this.avaliarConformidadeTexto(itensMapeados),
+        processadoEm: new Date()
+      };
+
+      logger.info('Processamento de texto concluído', {
+        totalItens: itensMapeados.length,
+        confiancaMedia: estatisticas.confiancaMedia
+      });
+
+      return resultado;
+
+    } catch (error) {
+      logger.error('Erro no processamento de texto:', error);
+      throw new Error(`Erro ao processar texto: ${error.message}`);
+    }
+  }
+
+  /**
+   * Extrai informações financeiras do texto
+   * @param {string} texto - Texto para análise
+   * @returns {Object} Informações financeiras extraídas
+   */
+  extrairInformacoesFinanceiras(texto) {
+    const informacoes = {
+      valores: [],
+      datas: [],
+      descricoes: [],
+      itens: []
+    };
+
+    // Extrair valores monetários (pt-AO: milhar com ponto, decimal com vírgula)
+    const valorRegex = /Kz\s*([\d.,]+)/gi;
+    let match;
+    while ((match = valorRegex.exec(texto)) !== null) {
+      const bruto = (match[1] || '').trim();
+      const normalizado = bruto.replace(/\./g, '').replace(',', '.');
+      const valor = parseFloat(normalizado);
+      if (!isNaN(valor)) {
+        informacoes.valores.push(valor);
+      }
+    }
+
+    // Extrair datas
+    const dataRegex = /(\d{1,2}\/\d{1,2}\/\d{4})/g;
+    while ((match = dataRegex.exec(texto)) !== null) {
+      informacoes.datas.push(match[1]);
+    }
+
+    // Extrair linhas com valores e descrições
+    const linhas = texto.split('\n');
+    linhas.forEach((linha, index) => {
+      if (linha.includes('Kz') && linha.length > 10) {
+        const valorMatch = linha.match(/Kz\s*([\d.,]+)/);
+        if (valorMatch) {
+          const bruto = (valorMatch[1] || '').trim();
+          const normalizado = bruto.replace(/\./g, '').replace(',', '.');
+          const valor = parseFloat(normalizado);
+          const descricao = linha.replace(/Kz\s*[\d.,]+/g, '').trim();
+          
+          informacoes.itens.push({
+            linha: index + 1,
+            descricao: descricao,
+            valor: valor,
+            textoCompleto: linha.trim()
+          });
+        }
+      }
+    });
+
+    return informacoes;
+  }
+
+  /**
+   * Mapeia um item de texto para conta PGC-AO
+   * @param {Object} item - Item extraído do texto
+   * @returns {Object} Mapeamento PGC-AO
+   */
+  mapearItemTexto(item) {
+    const descricao = item.descricao.toLowerCase();
+    
+    // Determinar se é receita ou custo baseado na descrição
+    const isReceita = this.isReceita(descricao);
+    const tipo = isReceita ? 'receita' : 'custo';
+    
+    // Encontrar melhor match
+    const match = this.encontrarMelhorMatch(descricao, tipo);
+    
+    return {
+      contaPgc: match.codigo,
+      nomeContaPgc: match.nome,
+      confianca: match.confianca,
+      tipo: tipo,
+      categoriaCustomizada: match.confianca < 80 ? item.descricao : null,
+      mapeamentoOriginal: {
+        descricao: item.descricao,
+        valor: item.valor,
+        linha: item.linha
+      }
+    };
+  }
+
+  /**
+   * Determina se uma descrição é uma receita
+   * @param {string} descricao - Descrição do item
+   * @returns {boolean} Se é receita
+   */
+  isReceita(descricao) {
+    const palavrasReceita = [
+      'venda', 'vendas', 'receita', 'receitas', 'fatura', 'faturas',
+      'vender', 'comercialização', 'venda de', 'produto', 'serviço'
+    ];
+    
+    return palavrasReceita.some(palavra => descricao.includes(palavra));
+  }
+
+  /**
+   * Calcula estatísticas do mapeamento de texto
+   * @param {Array} itensMapeados - Itens mapeados
+   * @returns {Object} Estatísticas
+   */
+  calcularEstatisticasTexto(itensMapeados) {
+    const totalItens = itensMapeados.length;
+    const itensComAltaConfianca = itensMapeados.filter(item => 
+      item.pgcMapping.confianca >= 80
+    ).length;
+    
+    const confiancaMedia = totalItens > 0 
+      ? itensMapeados.reduce((sum, item) => sum + item.pgcMapping.confianca, 0) / totalItens
+      : 0;
+
+    const totalValor = itensMapeados.reduce((sum, item) => sum + (item.valor || 0), 0);
+
+    return {
+      totalItens,
+      itensComAltaConfianca,
+      itensPrecisandoRevisao: totalItens - itensComAltaConfianca,
+      confiancaMedia: Math.round(confiancaMedia),
+      percentualConfianca: totalItens > 0 ? Math.round((itensComAltaConfianca / totalItens) * 100) : 0,
+      totalValor: totalValor
+    };
+  }
+
+  /**
+   * Gera resumo por classe PGC do texto processado
+   * @param {Array} itensMapeados - Itens mapeados
+   * @returns {Object} Resumo por classe
+   */
+  gerarResumoPorClasseTexto(itensMapeados) {
+    const resumo = {};
+    
+    itensMapeados.forEach(item => {
+      const classePgc = item.pgcMapping.contaPgc.substring(0, 2);
+      
+      if (!resumo[classePgc]) {
+        resumo[classePgc] = {
+          codigo: classePgc,
+          nome: this.pgcMapping[classePgc] || 'Classe não definida',
+          total: 0,
+          itens: 0,
+          contas: {}
+        };
+      }
+      
+      resumo[classePgc].total += item.valor || 0;
+      resumo[classePgc].itens += 1;
+      
+      const contaPgc = item.pgcMapping.contaPgc;
+      if (!resumo[classePgc].contas[contaPgc]) {
+        resumo[classePgc].contas[contaPgc] = {
+          codigo: contaPgc,
+          nome: item.pgcMapping.nomeContaPgc,
+          total: 0,
+          itens: 0
+        };
+      }
+      
+      resumo[classePgc].contas[contaPgc].total += item.valor || 0;
+      resumo[classePgc].contas[contaPgc].itens += 1;
+    });
+
+    return resumo;
+  }
+
+  /**
+   * Avalia conformidade do mapeamento de texto
+   * @param {Array} itensMapeados - Itens mapeados
+   * @returns {Object} Avaliação de conformidade
+   */
+  avaliarConformidadeTexto(itensMapeados) {
+    const estatisticas = this.calcularEstatisticasTexto(itensMapeados);
+    
+    const conformidade = {
+      nivel: 'alto',
+      score: 0,
+      problemas: [],
+      recomendacoes: []
+    };
+
+    // Avaliar percentual de confiança
+    if (estatisticas.percentualConfianca < 70) {
+      conformidade.nivel = 'baixo';
+      conformidade.problemas.push('Muitos itens com mapeamento incerto');
+      conformidade.recomendacoes.push('Revisar descrições dos itens no documento');
+    } else if (estatisticas.percentualConfianca < 85) {
+      conformidade.nivel = 'médio';
+      conformidade.problemas.push('Alguns itens precisam de revisão');
+      conformidade.recomendacoes.push('Verificar itens com baixa confiança');
+    }
+
+    // Verificar se há contas essenciais
+    const resumo = this.gerarResumoPorClasseTexto(itensMapeados);
+    const classesPresentes = Object.keys(resumo);
+    
+    if (!classesPresentes.some(c => c.startsWith('7'))) {
+      conformidade.problemas.push('Nenhuma receita identificada no documento');
+      conformidade.recomendacoes.push('Verificar se o documento contém informações de receitas');
+    }
+    
+    if (!classesPresentes.some(c => c.startsWith('6'))) {
+      conformidade.problemas.push('Nenhum custo identificado no documento');
+      conformidade.recomendacoes.push('Verificar se o documento contém informações de custos');
+    }
+
+    // Calcular score
+    conformidade.score = Math.min(100, 
+      (estatisticas.percentualConfianca * 0.7) + 
+      (classesPresentes.length * 5) +
+      (estatisticas.totalItens > 0 ? 10 : 0)
+    );
+
+    return conformidade;
+  }
+
+  /**
    * Gera demonstração de resultados conforme PGC-AO
    * @param {Object} mapeamento - Dados do mapeamento
    * @returns {Object} Demonstração de resultados
@@ -514,3 +782,4 @@ class PGCMappingService {
 }
 
 module.exports = PGCMappingService;
+

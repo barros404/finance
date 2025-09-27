@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Search, FileText, Download, Calendar, Eye, AlertCircle, Edit } from 'lucide-react';
-import { orcamentoApi } from '../services/api';
+import { mockOrcamentoApi } from '../services/mock/mockApi.js';
+import { orcamentoApi } from '../services/api.js';
 
 const Orcamento = () => {
   const navigate = useNavigate();
@@ -73,6 +74,8 @@ const Orcamento = () => {
       console.log('O que vem do console',response)
       
       if (response.status=='success' && response.data) {
+
+        console.log('O que vem do console',response.data)
         const { orcamentos: listaOrcamentos, pagination: dadosPaginacao } = response.data;
         
         // Processar os dados da API
@@ -110,7 +113,7 @@ const Orcamento = () => {
   const carregarEstatisticas = useCallback(async () => {
     try {
       console.log('🔄 Carregando estatísticas...');
-      const response = await orcamentoApi.obterEstatisticas();
+      const response = await mockOrcamentoApi.obterEstatisticas();
       
       console.log('📥 Resposta da API de estatísticas:', response);
       
@@ -170,7 +173,7 @@ const Orcamento = () => {
   const handleBaixarOrcamento = async (orcamentoId) => {
     try {
       console.log('📄 Baixando orçamento:', orcamentoId);
-      const response = await orcamentoApi.exportarOrcamento(orcamentoId, 'pdf');
+      const response = await mockOrcamentoApi.exportarOrcamento(orcamentoId, 'pdf');
       
       // Criar link para download
       const blob = new Blob([response], { type: 'application/pdf' });

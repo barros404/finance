@@ -11,6 +11,14 @@ const logger = require('./utils/logger');
 const authRoutes = require('./routes/auth.routes');
 const orcamentoRoutes = require('./routes/orcamento.routes');
 const tesourariaRoutes = require('./routes/tesouraria.routes');
+const uploadRoutes = require('./routes/upload.routes');
+const relatoriosRoutes = require('./routes/relatorios.routes');
+const riscosRoutes = require('./routes/riscos.routes');
+const execucaoRoutes = require('./routes/execucao.routes');
+const usuarioRoutes = require('./routes/usuario.routes');
+const aprovacaoRoutes = require('./routes/aprovacao.routes');
+const pgcRoutes = require('./routes/pgc.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,6 +43,14 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/orcamentos', orcamentoRoutes);
 app.use('/api/tesouraria', tesourariaRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/relatorios', relatoriosRoutes);
+app.use('/api/riscos', riscosRoutes);
+app.use('/api/execucoes', execucaoRoutes);
+app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/aprovacao', aprovacaoRoutes);
+app.use('/api/pgc', pgcRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // 404 handler
 app.use((req, res) => {

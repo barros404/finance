@@ -1,45 +1,95 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download, Filter, BarChart3, PieChart, LineChart, FileText, Calendar, TrendingUp, Eye } from 'lucide-react';
+import { orcamentoApi, tesourariaApi, validacaoContasApi } from '../services/api';
 
 const Relatorios = () => {
-  const relatorios = [
-    {
-      id: 1,
-      titulo: 'Relatório Financeiro Mensal',
-      tipo: 'Financeiro',
-      periodo: 'Set 2024',
-      criadoEm: '01/09/2024',
-      tamanho: '2.3 MB',
-      downloads: 45
-    },
-    {
-      id: 2,
-      titulo: 'Análise de Despesas por Departamento',
-      tipo: 'Despesas',
-      periodo: 'Q3 2024',
-      criadoEm: '15/08/2024',
-      tamanho: '1.8 MB',
-      downloads: 32
-    },
-    {
-      id: 3,
-      titulo: 'Projeção de Receitas 2024-2025',
-      tipo: 'Receitas',
-      periodo: '2024-2025',
-      criadoEm: '20/07/2024',
-      tamanho: '3.1 MB',
-      downloads: 67
-    },
-    {
-      id: 4,
-      titulo: 'Balanço Patrimonial Q3',
-      tipo: 'Balanço',
-      periodo: 'Jul-Set 2024',
-      criadoEm: '30/09/2024',
-      tamanho: '4.2 MB',
-      downloads: 23
+  const [relatorios, setRelatorios] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [estatisticas, setEstatisticas] = useState({
+    totalOrcamentos: 0,
+    totalPlanos: 0,
+    totalContas: 0,
+    valorTotal: 0
+  });
+
+  useEffect(() => {
+    carregarDadosRelatorios();
+  }, []);
+
+  const carregarDadosRelatorios = async () => {
+    setIsLoading(true);
+    try {
+      console.log('🔄 Carregando dados dos relatórios...');
+      
+      // Carregar estatísticas de diferentes módulos
+      const [statsOrcamentos, statsPlanos, statsContas] = await Promise.all([
+        orcamentoApi.obterEstatisticas(),
+        tesourariaApi.obterFluxoCaixa(),
+        validacaoContasApi.obterEstatisticas()
+      ]);
+
+      console.log('📥 Dados carregados:', { statsOrcamentos, statsPlanos, statsContas });
+
+      setEstatisticas({
+        totalOrcamentos: statsOrcamentos.data?.total || 0,
+        totalPlanos: statsPlanos.data?.total || 0,
+        totalContas: statsContas.data?.totalContas || 0,
+        valorTotal: statsOrcamentos.data?.valorTotal || 0
+      });
+
+      // Gerar relatórios baseados nos dados reais da API
+      const relatoriosGerados = [
+        {
+          id: 1,
+          titulo: 'Relatório Financeiro Mensal',
+          tipo: 'Financeiro',
+          periodo: new Date().toLocaleDateString('pt-AO', { month: 'long', year: 'numeric' }),
+          criadoEm: new Date().toLocaleDateString('pt-AO'),
+          tamanho: '2.3 MB',
+          downloads: 45,
+          dados: statsOrcamentos.data
+        },
+        {
+          id: 2,
+          titulo: 'Análise de Despesas por Departamento',
+          tipo: 'Despesas',
+          periodo: 'Q3 2024',
+          criadoEm: '15/08/2024',
+          tamanho: '1.8 MB',
+          downloads: 32,
+          dados: statsPlanos.data
+        },
+        {
+          id: 3,
+          titulo: 'Projeção de Receitas 2024-2025',
+          tipo: 'Receitas',
+          periodo: '2024-2025',
+          criadoEm: '20/07/2024',
+          tamanho: '3.1 MB',
+          downloads: 67,
+          dados: statsContas.data
+        },
+        {
+          id: 4,
+          titulo: 'Balanço Patrimonial Q3',
+          tipo: 'Balanço',
+          periodo: 'Jul-Set 2024',
+          criadoEm: '30/09/2024',
+          tamanho: '4.2 MB',
+          downloads: 23,
+          dados: estatisticas
+        }
+      ];
+
+      setRelatorios(relatoriosGerados);
+      console.log('✅ Relatórios carregados:', relatoriosGerados.length);
+
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados dos relatórios:', error);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
   const tiposRelatorio = [
     {

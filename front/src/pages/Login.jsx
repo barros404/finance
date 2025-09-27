@@ -31,6 +31,12 @@ const Login = ({ onRecuperarSenha }) => {
         throw new Error('Por favor, preencha todos os campos');
       }
 
+      // Validar formato do email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(credenciais.email)) {
+        throw new Error('Por favor, insira um email válido');
+      }
+
       // Fazer login usando o contexto
       await login({
         email: credenciais.email,
@@ -41,7 +47,27 @@ const Login = ({ onRecuperarSenha }) => {
       navigate('/dashboard');
     } catch (error) {
       console.error('Erro no login:', error);
-      setError(error.message || 'Erro ao fazer login. Verifique suas credenciais.');
+      
+      // Tratar diferentes tipos de erro
+      let errorMessage = 'Erro ao fazer login. Tente novamente.';
+      
+      if (error.message) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION_REFUSED')) {
+          errorMessage = 'Servidor não está rodando. Verifique se o backend está ativo.';
+        } else if (error.message.includes('401') || error.message.includes('credenciais')) {
+          errorMessage = 'Email ou senha incorretos. Verifique suas credenciais.';
+        } else if (error.message.includes('403')) {
+          errorMessage = 'Acesso negado. Entre em contato com o administrador.';
+        } else if (error.message.includes('500')) {
+          errorMessage = 'Erro interno do servidor. Tente novamente em alguns minutos.';
+        } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+          errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
     }
   };
 
@@ -58,10 +84,13 @@ const Login = ({ onRecuperarSenha }) => {
         
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-                <p className="text-red-700 text-sm">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-fadeIn">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-red-800 font-medium text-sm">Erro no Login</p>
+                  <p className="text-red-700 text-sm mt-1">{error}</p>
+                </div>
               </div>
             </div>
           )}

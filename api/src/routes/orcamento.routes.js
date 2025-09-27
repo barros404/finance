@@ -167,9 +167,7 @@ router.post(
     body('custos.personnel').optional().isArray(),
     body('custos.fixed').optional().isArray(),
     body('ativos').optional().isArray(),
-    body('sazonalidade').optional().isObject(),
-    body('sazonalidade.hasSeasonality').optional().isBoolean(),
-    body('sazonalidade.months').optional().isArray()
+    body('sazonalidade').optional().isArray()
   ],
   validateRequest,
   orcamentoController.criarOrcamentoCompleto
@@ -208,6 +206,42 @@ router.get(
   ],
   validateRequest,
   orcamentoController.obterEstatisticas
+);
+
+/**
+ * @swagger
+ * /api/orcamentos/aprovado:
+ *   get:
+ *     summary: Obtém o orçamento aprovado para um ano específico
+ *     tags: [Orçamentos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: ano
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 2020
+ *           maximum: 2100
+ *         description: Ano do orçamento aprovado
+ *     responses:
+ *       200:
+ *         description: Orçamento aprovado retornado com sucesso
+ *       400:
+ *         description: Ano obrigatório
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  '/aprovado',
+  [
+    query('ano').isInt({ min: 2020, max: 2100 }).withMessage('Ano inválido')
+  ],
+  validateRequest,
+  orcamentoController.obterOrcamentoAprovado
 );
 
 /**

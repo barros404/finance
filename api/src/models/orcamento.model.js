@@ -62,7 +62,7 @@ module.exports = (sequelize) => {
   Orcamento.associate = (models) => {
     Orcamento.belongsTo(models.Empresa, {
       foreignKey: 'empresaId',
-      as: 'empresa'
+      as: 'empresas'
     });
     Orcamento.hasMany(models.Sazonalidade, {
       foreignKey: 'orcamentoId',

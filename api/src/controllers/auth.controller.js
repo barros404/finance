@@ -133,7 +133,7 @@ exports.getMe = async (req, res, next) => {
       include: [
         {
           association: 'empresa',
-          attributes: ['id', 'name', 'logo']
+          attributes: ['id', 'nome', 'nif']
         }
       ]
     });

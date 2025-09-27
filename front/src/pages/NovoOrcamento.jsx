@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Plus, Trash2, Save, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { orcamentoApi } from '../services/api';
@@ -21,10 +21,7 @@ const NovoOrcamento = () => {
       fixed: []
     },
     ativos: [],
-    sazonalidade: {
-      hasSeasonality: false,
-      months: Array(12).fill({ percentual: 8.33 })
-    }
+    sazonalidade: Array(12).fill(8.33) // Array simples com percentuais
   });
 
   const steps = [
@@ -37,6 +34,76 @@ const NovoOrcamento = () => {
     { id: 6, title: 'Sazonalidade', icon: '📊' },
     { id: 7, title: 'Revisão e Envio', icon: '✅' }
   ];
+
+  // Carregar dados salvos localmente ao inicializar
+  useEffect(() => {
+    const savedData = localStorage.getItem('novoOrcamentoDraft');
+    if (savedData) {
+      try {
+        setFormData(JSON.parse(savedData));
+      } catch (e) {
+        console.error('Erro ao carregar rascunho:', e);
+      }
+    }
+  }, []);
+
+  // Salvar dados localmente sempre que houver mudanças
+  useEffect(() => {
+    localStorage.setItem('novoOrcamentoDraft', JSON.stringify(formData));
+  }, [formData]);
+
+  // Validação antes de avançar para a próxima etapa
+  const validateStep = (step) => {
+    switch(step) {
+      case 0:
+        if (!formData.nome.trim()) {
+          setError('Nome do orçamento é obrigatório');
+          return false;
+        }
+        if (!formData.ano || formData.ano < 2020 || formData.ano > 2100) {
+          setError('Ano do orçamento deve estar entre 2020 and 2100');
+          return false;
+        }
+        break;
+      case 1:
+        if (formData.receitas.length === 0) {
+          setError('Pelo menos uma receita deve ser adicionada');
+          return false;
+        }
+        for (let i = 0; i < formData.receitas.length; i++) {
+          const revenue = formData.receitas[i];
+          if (!revenue.description.trim()) {
+            setError(`A receita ${i + 1} precisa de uma descrição`);
+            return false;
+          }
+          if (revenue.quantity <= 0 || revenue.unitPrice <= 0) {
+            setError(`Verifique os valores da receita ${i + 1}`);
+            return false;
+          }
+        }
+        break;
+      case 6:
+        const totalPercentual = formData.sazonalidade.reduce((sum, percent) => sum + parseFloat(percent || 0), 0);
+        if (Math.abs(totalPercentual - 100) > 0.1) {
+          setError(`A soma dos percentuais deve ser 100%. Atual: ${totalPercentual.toFixed(2)}%`);
+          return false;
+        }
+        break;
+    }
+    setError(null);
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(Math.min(steps.length - 1, currentStep + 1));
+    }
+  };
+
+  const handlePrevStep = () => {
+    setCurrentStep(Math.max(0, currentStep - 1));
+    setError(null);
+  };
 
   const addRevenue = () => {
     setFormData(prev => ({
@@ -115,15 +182,12 @@ const NovoOrcamento = () => {
 
   const updateSazonalidade = (index, value) => {
     setFormData(prev => {
-      const newMonths = [...prev.sazonalidade.months];
-      newMonths[index] = { percentual: parseFloat(value) || 0 };
+      const newSazonalidade = [...prev.sazonalidade];
+      newSazonalidade[index] = parseFloat(value) || 0;
       
       return {
         ...prev,
-        sazonalidade: {
-          ...prev.sazonalidade,
-          months: newMonths
-        }
+        sazonalidade: newSazonalidade
       };
     });
   };
@@ -139,7 +203,11 @@ const NovoOrcamento = () => {
     const netResult = revenueTotal - totalCosts;
     const margin = revenueTotal > 0 ? (netResult / revenueTotal * 100).toFixed(1) : 0;
     
-    return { revenueTotal, totalCosts, netResult, margin };
+    const receitaMensal = formData.sazonalidade.map(percentual => 
+      (revenueTotal * (percentual / 100)).toFixed(2)
+    );
+    
+    return { revenueTotal, totalCosts, netResult, margin, receitaMensal };
   };
 
   const renderStepContent = () => {
@@ -464,54 +532,83 @@ const NovoOrcamento = () => {
         );
       
       case 6:
+        const totalPercentual = formData.sazonalidade.reduce((sum, percent) => sum + parseFloat(percent || 0), 0);
+        
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold">Sazonalidade do Negócio</h3>
             
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                className="rounded text-indigo-600"
-                checked={formData.sazonalidade.hasSeasonality}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  sazonalidade: { ...prev.sazonalidade, hasSeasonality: e.target.checked }
-                }))}
-              />
-              <label className="text-sm font-medium">
-                O negócio possui variações sazonais significativas
-              </label>
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <p className="text-sm text-blue-700">
+                Distribua a receita total pelos meses do ano. A soma deve ser 100%.
+              </p>
+              <div className="mt-2 flex items-center">
+                <span className="text-sm font-medium text-blue-800">
+                  Total: {totalPercentual.toFixed(2)}%
+                </span>
+                {Math.abs(totalPercentual - 100) > 0.1 && (
+                  <span className="ml-3 text-sm text-red-600">
+                    ⚠️ A soma deve ser exatamente 100%
+                  </span>
+                )}
+              </div>
             </div>
             
-            {formData.sazonalidade.hasSeasonality && (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  Indique a distribuição percentual esperada de receitas por mês:
-                </p>
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                  {['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'].map((month, index) => (
-                    <div key={month}>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">{month}</label>
-                      <input
-                        type="number"
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        placeholder="8.33%"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        value={formData.sazonalidade.months[index]?.percentual || 8.33}
-                        onChange={(e) => updateSazonalidade(index, e.target.value)}
-                      />
-                    </div>
-                  ))}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map((month, index) => (
+                <div key={index} className="border rounded-lg p-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {month}
+                  </label>
+                  <div className="flex items-center">
+                    <input
+                      type="number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={formData.sazonalidade[index]}
+                      onChange={(e) => updateSazonalidade(index, e.target.value)}
+                    />
+                    <span className="ml-2 text-sm text-gray-500">%</span>
+                  </div>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
+            
+            <div className="flex justify-between items-center mt-6">
+              <button
+                onClick={() => {
+                  setFormData(prev => ({
+                    ...prev,
+                    sazonalidade: Array(12).fill(8.33)
+                  }));
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
+              >
+                Distribuir Uniformemente
+              </button>
+              
+              <button
+                onClick={() => {
+                  const distribuicaoSazonal = [5, 5, 10, 15, 20, 15, 10, 5, 5, 5, 5, 5];
+                  setFormData(prev => ({
+                    ...prev,
+                    sazonalidade: distribuicaoSazonal
+                  }));
+                }}
+                className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 text-sm"
+              >
+                Exemplo Sazonal
+              </button>
+            </div>
           </div>
         );
       
       case 7:
         const totals = calculateTotals();
+        
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold">Resumo do Orçamento</h3>
@@ -534,6 +631,39 @@ const NovoOrcamento = () => {
                   <p className="text-sm opacity-90">Margem</p>
                   <p className="text-2xl font-bold">{totals.margin}%</p>
                 </div>
+              </div>
+            </div>
+            
+            <div className="bg-white border rounded-lg p-4">
+              <h4 className="font-semibold text-gray-800 mb-3">Distribuição Sazonal da Receita</h4>
+              <div className="grid grid-cols-6 gap-2 mb-4">
+                {totals.receitaMensal.map((valor, index) => (
+                  <div key={index} className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">
+                      {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][index]}
+                    </div>
+                    <div className="text-sm font-medium">
+                      {parseFloat(valor).toLocaleString('pt-AO')} Kz
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {formData.sazonalidade[index].toFixed(1)}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex items-end h-20 gap-1 mt-3">
+                {totals.receitaMensal.map((valor, index) => {
+                  const height = (parseFloat(valor) / Math.max(...totals.receitaMensal.map(v => parseFloat(v)))) * 60;
+                  return (
+                    <div
+                      key={index}
+                      className="flex-1 bg-indigo-500 rounded-t hover:bg-indigo-600 transition-colors"
+                      style={{ height: `${height}px` }}
+                      title={`${['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][index]}: ${parseFloat(valor).toLocaleString('pt-AO')} Kz (${formData.sazonalidade[index].toFixed(1)}%)`}
+                    />
+                  );
+                })}
               </div>
             </div>
             
@@ -560,7 +690,11 @@ const NovoOrcamento = () => {
             </div>
             
             <div className="flex gap-3">
-              <button className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+              <button 
+                onClick={handleSaveDraft}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
+              >
+                <Save className="w-5 h-5" />
                 Guardar Rascunho
               </button>
               <button 
@@ -583,12 +717,17 @@ const NovoOrcamento = () => {
     navigate(-1);
   };
 
+  const handleSaveDraft = () => {
+    alert('Rascunho salvo automaticamente!');
+  };
+
   const handleFinalizar = async () => {
+    if (!validateStep(currentStep)) return;
+    
     setIsLoading(true);
     setError(null);
     
     try {
-      // Validar dados obrigatórios
       if (!formData.nome) {
         throw new Error('Nome do orçamento é obrigatório');
       }
@@ -601,7 +740,6 @@ const NovoOrcamento = () => {
         throw new Error('Pelo menos uma receita deve ser adicionada');
       }
       
-      // Preparar dados para envio
       const dadosOrcamento = {
         nome: formData.nome,
         descricao: formData.descricao,
@@ -610,20 +748,25 @@ const NovoOrcamento = () => {
         receitas: formData.receitas,
         custos: formData.custos,
         ativos: formData.ativos,
-        sazonalidade: formData.sazonalidade
+        sazonalidade: formData.sazonalidade.map((percentual, index) => ({
+          mes: index + 1,
+          percentual: parseFloat(percentual) || 0
+        }))
       };
-      
-      // Chamar API para criar orçamento
+      console.log('DADOS A SER ENVIADO NA API',dadosOrcamento)
       const response = await orcamentoApi.criarOrcamentoCompleto(dadosOrcamento);
       
-      if (response.success) {
-        // Sucesso - redirecionar para página de orçamentos
+      if (response.data && response.data.orcamento) {
+        localStorage.removeItem('novoOrcamentoDraft');
+        
         navigate('/orcamento', { 
           state: { 
             message: 'Orçamento criado com sucesso!',
             type: 'success'
           }
         });
+      } else {
+        throw new Error('Resposta inválida da API');
       }
     } catch (err) {
       setError(err.message || 'Erro ao criar orçamento. Tente novamente.');
@@ -644,29 +787,31 @@ const NovoOrcamento = () => {
           Voltar para Orçamentos
         </button>
         <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Header */}
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6">
             <h1 className="text-2xl font-bold text-white">Novo Orçamento</h1>
             <p className="text-indigo-100">Preencha as informações do orçamento</p>
-            {/* Progress Steps */}
             <div className="mt-6 flex items-center justify-between">
               {steps.map((step, index) => (
                 <div key={step.id} className="flex items-center">
                   <div
                     className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${
                       currentStep === index
-                        ? 'bg-indigo-600 text-white scale-110'
+                        ? 'bg-white text-indigo-600 scale-110 border-2 border-indigo-600'
                         : currentStep > index
-                        ? 'bg-green-400 text-white'
-                        : 'bg-gray-200 text-gray-500 opacity-60'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-200 text-gray-500'
                     }`}
                   >
-                    <span className="text-lg">{step.icon}</span>
+                    {currentStep > index ? (
+                      <CheckCircle className="w-5 h-5" />
+                    ) : (
+                      <span className="text-lg">{step.icon}</span>
+                    )}
                   </div>
                   {index < steps.length - 1 && (
                     <div
                       className={`w-full h-1 mx-2 transition-all ${
-                        currentStep > index ? 'bg-green-400' : 'bg-gray-200 opacity-30'
+                        currentStep > index ? 'bg-green-500' : 'bg-gray-300'
                       }`}
                       style={{ width: '60px' }}
                     />
@@ -678,7 +823,7 @@ const NovoOrcamento = () => {
               {steps.map((step) => (
                 <div
                   key={step.id}
-                  className={`text-center ${currentStep === step.id ? 'font-semibold text-indigo-600' : 'text-gray-400'}`}
+                  className={`text-center ${currentStep === step.id ? 'font-semibold text-white' : 'text-gray-200'}`}
                   style={{ width: '100px' }}
                 >
                   {step.title}
@@ -686,74 +831,109 @@ const NovoOrcamento = () => {
               ))}
             </div>
           </div>
-          {/* Content */}
+          
           <div className="p-8">
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-600" />
-                  <p className="text-red-700 font-medium">{error}</p>
-                </div>
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                <p className="text-red-700 font-medium">{error}</p>
               </div>
             )}
+            
+            <div className="mb-6 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">
+                {steps[currentStep].title}
+              </h2>
+              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                Passo {currentStep + 1} de {steps.length}
+              </span>
+            </div>
+            
             {renderStepContent()}
           </div>
-          {/* Navigation */}
+          
           <div className="flex justify-between items-center px-8 py-4 bg-gray-50 border-t">
             <button
-              onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+              onClick={handlePrevStep}
               disabled={currentStep === 0}
-              className={`px-6 py-2 rounded-lg transition-colors ${
+              className={`px-6 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                 currentStep === 0
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
               }`}
             >
+              <ChevronRight className="w-4 h-4 transform rotate-180" />
               Anterior
             </button>
+            
             <div className="flex gap-2">
               {steps.map((step) => (
                 <button
                   key={step.id}
-                  onClick={() => setCurrentStep(step.id)}
+                  onClick={() => {
+                    if (step.id <= currentStep || validateStep(currentStep)) {
+                      setCurrentStep(step.id);
+                    }
+                  }}
                   className={`w-2 h-2 rounded-full transition-all ${
-                    currentStep === step.id ? 'w-8 bg-indigo-600' : 'bg-gray-300'
+                    currentStep === step.id 
+                      ? 'w-8 bg-indigo-600' 
+                      : step.id < currentStep
+                      ? 'bg-green-500'
+                      : 'bg-gray-300'
                   }`}
                 />
               ))}
             </div>
+            
             {currentStep < steps.length - 1 ? (
               <button
-                onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
+                onClick={handleNextStep}
                 className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
               >
                 Próximo
                 <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
-              <button
-                onClick={handleFinalizar}
-                disabled={isLoading}
-                className={`px-6 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                  isLoading 
-                    ? 'bg-gray-400 text-white cursor-not-allowed' 
-                    : 'bg-green-600 text-white hover:bg-green-700'
-                }`}
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4" />
-                    Salvar e Finalizar
-                  </>
-                )}
-              </button>
+              <div className="flex gap-3">
+                <button 
+                  onClick={handleSaveDraft}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Guardar Rascunho
+                </button>
+                <button
+                  onClick={handleFinalizar}
+                  disabled={isLoading}
+                  className={`px-6 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                    isLoading 
+                      ? 'bg-gray-400 text-white cursor-not-allowed' 
+                      : 'bg-green-600 text-white hover:bg-green-700'
+                  }`}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Processando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      Finalizar Orçamento
+                    </>
+                  )}
+                </button>
+              </div>
             )}
           </div>
+        </div>
+        
+        <div className="mt-4 text-center">
+          <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full inline-flex items-center">
+            <CheckCircle className="w-3 h-3 mr-1 text-green-500" />
+            Alterações salvas automaticamente
+          </span>
         </div>
       </div>
     </div>

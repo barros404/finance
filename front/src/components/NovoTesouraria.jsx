@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Calendar, DollarSign, FileText, Save, ArrowLeft, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { tesourariaApi } from '../services/api';
 
 const NovoTesouraria = ({ onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -9,6 +10,8 @@ const NovoTesouraria = ({ onClose, onSave }) => {
     pagamentos: '',
     observacoes: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,10 +21,35 @@ const NovoTesouraria = ({ onClose, onSave }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aqui você pode adicionar validações antes de salvar
-    onSave(formData);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Preparar dados para a API
+      const dadosPlano = {
+        mes: formData.mes,
+        saldoInicial: parseFloat(formData.saldoInicial) || 0,
+        recebimentos: parseFloat(formData.recebimentos) || 0,
+        pagamentos: parseFloat(formData.pagamentos) || 0,
+        observacoes: formData.observacoes
+      };
+
+      // Salvar via API
+      const response = await tesourariaApi.criarPlano(dadosPlano);
+      
+      if (response.status === 'success' || response.success) {
+        onSave(response.data);
+      } else {
+        throw new Error(response.message || 'Erro ao criar plano');
+      }
+    } catch (err) {
+      console.error('Erro ao criar plano de tesouraria:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,6 +78,12 @@ const NovoTesouraria = ({ onClose, onSave }) => {
             </button>
           </div>
         </div>
+
+        {error && (
+          <div className="mx-8 mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="p-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -166,10 +200,20 @@ const NovoTesouraria = ({ onClose, onSave }) => {
             </button>
             <button
               type="submit"
-              className="flex items-center px-8 py-3 border border-transparent rounded-2xl shadow-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-105 font-semibold"
+              disabled={isLoading}
+              className="flex items-center px-8 py-3 border border-transparent rounded-2xl shadow-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-105 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save className="w-5 h-5 mr-2" />
-              Salvar Plano
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5 mr-2" />
+                  Salvar Plano
+                </>
+              )}
             </button>
           </div>
         </form>
