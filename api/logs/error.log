@@ -23192,3 +23192,1798 @@ SequelizeConnectionRefusedError
 {
   "service": "agroia-api"
 }
+2025-09-27 20:37:02 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 20:50:15 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 20:52:06 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 20:53:24 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 20:54:22 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:00:21 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:01:20 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:02:17 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:02:57 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:03:26 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:03:29 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:04:58 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:05:58 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:10:48 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:12:51 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:13:59 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:14:51 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:16:21 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:18:36 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:18:59 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:19:21 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:20:11 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-27 21:38:30 [[31MERROR[39M] Erro ao criar orçamento completo: invalid input value for enum "enum_Custos_tipoCusto": "fixo"
+Error
+    at Query.run (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query.js:50:25)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.insert (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:308:21)
+    at async model.save (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:2490:35)
+    at async Custo.create (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1362:12)
+    at async C:\endiagro\falder\api\src\controllers\orcamento.controller.js:299:31
+    at async Promise.all (index 0)
+    at async Promise.all (index 3)
+    at async exports.criarOrcamentoCompleto (C:\endiagro\falder\api\src\controllers\orcamento.controller.js:328:51)
+{
+  "service": "agroia-api",
+  "userId": 1,
+  "body": {
+    "nome": "Teste",
+    "descricao": "Teste",
+    "ano": 2028,
+    "observacoes": "Teste",
+    "receitas": [
+      {
+        "description": "Café",
+        "quantity": 20,
+        "unitPrice": 10000,
+        "total": 200000
+      }
+    ],
+    "custos": {
+      "materials": [
+        {
+          "description": "Adubo de Semente",
+          "quantity": 20,
+          "unitCost": 20000,
+          "frequency": "Anual",
+          "total": 400000
+        }
+      ],
+      "services": [
+        {
+          "description": "Consultoria",
+          "quantity": 12,
+          "unitCost": 20000,
+          "frequency": "Mensal",
+          "total": 240000
+        }
+      ],
+      "personnel": [
+        {
+          "role": "Salario dos Assitente",
+          "quantity": 4,
+          "salary": 400000,
+          "type": "Permanente",
+          "total": 1600000
+        }
+      ],
+      "fixed": [
+        {
+          "description": "Aluger de Veiculo",
+          "quantity": 10000,
+          "unitCost": 100000,
+          "frequency": "Anual",
+          "total": 1000000000
+        }
+      ]
+    },
+    "ativos": [],
+    "sazonalidade": [
+      {
+        "mes": 1,
+        "percentual": 8.33
+      },
+      {
+        "mes": 2,
+        "percentual": 8.33
+      },
+      {
+        "mes": 3,
+        "percentual": 8.33
+      },
+      {
+        "mes": 4,
+        "percentual": 8.33
+      },
+      {
+        "mes": 5,
+        "percentual": 8.33
+      },
+      {
+        "mes": 6,
+        "percentual": 8.33
+      },
+      {
+        "mes": 7,
+        "percentual": 8.34
+      },
+      {
+        "mes": 8,
+        "percentual": 8.34
+      },
+      {
+        "mes": 9,
+        "percentual": 8.33
+      },
+      {
+        "mes": 10,
+        "percentual": 8.33
+      },
+      {
+        "mes": 11,
+        "percentual": 8.34
+      },
+      {
+        "mes": 12,
+        "percentual": 8.34
+      }
+    ]
+  }
+}
+2025-09-27 21:39:36 [[31MERROR[39M] Erro ao criar orçamento completo: invalid input value for enum "enum_Custos_tipoCusto": "fixo"
+Error
+    at Query.run (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query.js:50:25)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.insert (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:308:21)
+    at async model.save (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:2490:35)
+    at async Custo.create (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1362:12)
+    at async C:\endiagro\falder\api\src\controllers\orcamento.controller.js:300:31
+    at async Promise.all (index 0)
+    at async Promise.all (index 3)
+    at async exports.criarOrcamentoCompleto (C:\endiagro\falder\api\src\controllers\orcamento.controller.js:329:51)
+{
+  "service": "agroia-api",
+  "userId": 1,
+  "body": {
+    "nome": "Teste",
+    "descricao": "Teste",
+    "ano": 2028,
+    "observacoes": "Teste",
+    "receitas": [
+      {
+        "description": "Café",
+        "quantity": 20,
+        "unitPrice": 10000,
+        "total": 200000
+      }
+    ],
+    "custos": {
+      "materials": [
+        {
+          "description": "Adubo de Semente",
+          "quantity": 20,
+          "unitCost": 20000,
+          "frequency": "Anual",
+          "total": 400000
+        }
+      ],
+      "services": [
+        {
+          "description": "Consultoria",
+          "quantity": 12,
+          "unitCost": 20000,
+          "frequency": "Mensal",
+          "total": 240000
+        }
+      ],
+      "personnel": [
+        {
+          "role": "Salario dos Assitente",
+          "quantity": 4,
+          "salary": 400000,
+          "type": "Permanente",
+          "total": 1600000
+        }
+      ],
+      "fixed": [
+        {
+          "description": "Aluger de Veiculo",
+          "quantity": 10000,
+          "unitCost": 100000,
+          "frequency": "Anual",
+          "total": 1000000000
+        }
+      ]
+    },
+    "ativos": [],
+    "sazonalidade": [
+      {
+        "mes": 1,
+        "percentual": 8.33
+      },
+      {
+        "mes": 2,
+        "percentual": 8.33
+      },
+      {
+        "mes": 3,
+        "percentual": 8.33
+      },
+      {
+        "mes": 4,
+        "percentual": 8.33
+      },
+      {
+        "mes": 5,
+        "percentual": 8.33
+      },
+      {
+        "mes": 6,
+        "percentual": 8.33
+      },
+      {
+        "mes": 7,
+        "percentual": 8.34
+      },
+      {
+        "mes": 8,
+        "percentual": 8.34
+      },
+      {
+        "mes": 9,
+        "percentual": 8.33
+      },
+      {
+        "mes": 10,
+        "percentual": 8.33
+      },
+      {
+        "mes": 11,
+        "percentual": 8.34
+      },
+      {
+        "mes": 12,
+        "percentual": 8.34
+      }
+    ]
+  }
+}
+2025-09-27 21:40:13 [[31MERROR[39M] Erro ao criar orçamento completo: invalid input value for enum "enum_Custos_tipoCusto": "fixo"
+Error
+    at Query.run (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query.js:50:25)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.insert (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:308:21)
+    at async model.save (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:2490:35)
+    at async Custo.create (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1362:12)
+    at async C:\endiagro\falder\api\src\controllers\orcamento.controller.js:300:31
+    at async Promise.all (index 0)
+    at async Promise.all (index 3)
+    at async exports.criarOrcamentoCompleto (C:\endiagro\falder\api\src\controllers\orcamento.controller.js:329:51)
+{
+  "service": "agroia-api",
+  "userId": 1,
+  "body": {
+    "nome": "Teste",
+    "descricao": "Teste",
+    "ano": 2028,
+    "observacoes": "Teste",
+    "receitas": [
+      {
+        "description": "Café",
+        "quantity": 20,
+        "unitPrice": 10000,
+        "total": 200000
+      }
+    ],
+    "custos": {
+      "materials": [
+        {
+          "description": "Adubo de Semente",
+          "quantity": 20,
+          "unitCost": 20000,
+          "frequency": "Anual",
+          "total": 400000
+        }
+      ],
+      "services": [
+        {
+          "description": "Consultoria",
+          "quantity": 12,
+          "unitCost": 20000,
+          "frequency": "Mensal",
+          "total": 240000
+        }
+      ],
+      "personnel": [
+        {
+          "role": "Salario dos Assitente",
+          "quantity": 4,
+          "salary": 400000,
+          "type": "Permanente",
+          "total": 1600000
+        }
+      ],
+      "fixed": [
+        {
+          "description": "Aluger de Veiculo",
+          "quantity": 10000,
+          "unitCost": 100000,
+          "frequency": "Anual",
+          "total": 1000000000
+        }
+      ]
+    },
+    "ativos": [],
+    "sazonalidade": [
+      {
+        "mes": 1,
+        "percentual": 8.33
+      },
+      {
+        "mes": 2,
+        "percentual": 8.33
+      },
+      {
+        "mes": 3,
+        "percentual": 8.33
+      },
+      {
+        "mes": 4,
+        "percentual": 8.33
+      },
+      {
+        "mes": 5,
+        "percentual": 8.33
+      },
+      {
+        "mes": 6,
+        "percentual": 8.33
+      },
+      {
+        "mes": 7,
+        "percentual": 8.34
+      },
+      {
+        "mes": 8,
+        "percentual": 8.34
+      },
+      {
+        "mes": 9,
+        "percentual": 8.33
+      },
+      {
+        "mes": 10,
+        "percentual": 8.33
+      },
+      {
+        "mes": 11,
+        "percentual": 8.34
+      },
+      {
+        "mes": 12,
+        "percentual": 8.34
+      }
+    ]
+  }
+}
+2025-09-27 21:43:25 [[31MERROR[39M] Erro ao criar orçamento completo: invalid input value for enum "enum_Custos_tipoCusto": "fixo"
+Error
+    at Query.run (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query.js:50:25)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.insert (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:308:21)
+    at async model.save (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:2490:35)
+    at async Custo.create (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1362:12)
+    at async C:\endiagro\falder\api\src\controllers\orcamento.controller.js:300:31
+    at async Promise.all (index 0)
+    at async Promise.all (index 3)
+    at async exports.criarOrcamentoCompleto (C:\endiagro\falder\api\src\controllers\orcamento.controller.js:329:51)
+{
+  "service": "agroia-api",
+  "userId": 1,
+  "body": {
+    "nome": "Teste",
+    "descricao": "Teste",
+    "ano": 2028,
+    "observacoes": "Teste",
+    "receitas": [
+      {
+        "description": "Café",
+        "quantity": 20,
+        "unitPrice": 10000,
+        "total": 200000
+      }
+    ],
+    "custos": {
+      "materials": [
+        {
+          "description": "Adubo de Semente",
+          "quantity": 20,
+          "unitCost": 20000,
+          "frequency": "Anual",
+          "total": 400000
+        }
+      ],
+      "services": [
+        {
+          "description": "Consultoria",
+          "quantity": 12,
+          "unitCost": 20000,
+          "frequency": "Mensal",
+          "total": 240000
+        }
+      ],
+      "personnel": [
+        {
+          "role": "Salario dos Assitente",
+          "quantity": 4,
+          "salary": 400000,
+          "type": "Permanente",
+          "total": 1600000
+        }
+      ],
+      "fixed": [
+        {
+          "description": "Aluger de Veiculo",
+          "quantity": 10000,
+          "unitCost": 100000,
+          "frequency": "Anual",
+          "total": 1000000000
+        }
+      ]
+    },
+    "ativos": [],
+    "sazonalidade": [
+      {
+        "mes": 1,
+        "percentual": 8.33
+      },
+      {
+        "mes": 2,
+        "percentual": 8.33
+      },
+      {
+        "mes": 3,
+        "percentual": 8.33
+      },
+      {
+        "mes": 4,
+        "percentual": 8.33
+      },
+      {
+        "mes": 5,
+        "percentual": 8.33
+      },
+      {
+        "mes": 6,
+        "percentual": 8.33
+      },
+      {
+        "mes": 7,
+        "percentual": 8.34
+      },
+      {
+        "mes": 8,
+        "percentual": 8.34
+      },
+      {
+        "mes": 9,
+        "percentual": 8.33
+      },
+      {
+        "mes": 10,
+        "percentual": 8.33
+      },
+      {
+        "mes": 11,
+        "percentual": 8.34
+      },
+      {
+        "mes": 12,
+        "percentual": 8.34
+      }
+    ]
+  }
+}
+2025-09-27 21:43:55 [[31MERROR[39M] Erro ao criar orçamento completo: invalid input value for enum "enum_Custos_tipoCusto": "fixo"
+Error
+    at Query.run (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query.js:50:25)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.insert (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:308:21)
+    at async model.save (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:2490:35)
+    at async Custo.create (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1362:12)
+    at async C:\endiagro\falder\api\src\controllers\orcamento.controller.js:300:31
+    at async Promise.all (index 0)
+    at async Promise.all (index 3)
+    at async exports.criarOrcamentoCompleto (C:\endiagro\falder\api\src\controllers\orcamento.controller.js:329:51)
+{
+  "service": "agroia-api",
+  "userId": 1,
+  "body": {
+    "nome": "Teste",
+    "descricao": "Teste",
+    "ano": 2028,
+    "observacoes": "Teste",
+    "receitas": [
+      {
+        "description": "Café",
+        "quantity": 20,
+        "unitPrice": 10000,
+        "total": 200000
+      }
+    ],
+    "custos": {
+      "materials": [
+        {
+          "description": "Adubo de Semente",
+          "quantity": 20,
+          "unitCost": 20000,
+          "frequency": "Anual",
+          "total": 400000
+        }
+      ],
+      "services": [
+        {
+          "description": "Consultoria",
+          "quantity": 12,
+          "unitCost": 20000,
+          "frequency": "Mensal",
+          "total": 240000
+        }
+      ],
+      "personnel": [
+        {
+          "role": "Salario dos Assitente",
+          "quantity": 4,
+          "salary": 400000,
+          "type": "Permanente",
+          "total": 1600000
+        }
+      ],
+      "fixed": [
+        {
+          "description": "Aluger de Veiculo",
+          "quantity": 10000,
+          "unitCost": 100000,
+          "frequency": "Anual",
+          "total": 1000000000
+        }
+      ]
+    },
+    "ativos": [],
+    "sazonalidade": [
+      {
+        "mes": 1,
+        "percentual": 8.33
+      },
+      {
+        "mes": 2,
+        "percentual": 8.33
+      },
+      {
+        "mes": 3,
+        "percentual": 8.33
+      },
+      {
+        "mes": 4,
+        "percentual": 8.33
+      },
+      {
+        "mes": 5,
+        "percentual": 8.33
+      },
+      {
+        "mes": 6,
+        "percentual": 8.33
+      },
+      {
+        "mes": 7,
+        "percentual": 8.34
+      },
+      {
+        "mes": 8,
+        "percentual": 8.34
+      },
+      {
+        "mes": 9,
+        "percentual": 8.33
+      },
+      {
+        "mes": 10,
+        "percentual": 8.33
+      },
+      {
+        "mes": 11,
+        "percentual": 8.34
+      },
+      {
+        "mes": 12,
+        "percentual": 8.34
+      }
+    ]
+  }
+}
+2025-09-27 21:44:25 [[31MERROR[39M] Erro ao criar orçamento completo: invalid input value for enum "enum_Custos_tipoCusto": "fixo"
+Error
+    at Query.run (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query.js:50:25)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.insert (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:308:21)
+    at async model.save (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:2490:35)
+    at async Custo.create (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1362:12)
+    at async C:\endiagro\falder\api\src\controllers\orcamento.controller.js:300:31
+    at async Promise.all (index 0)
+    at async Promise.all (index 3)
+    at async exports.criarOrcamentoCompleto (C:\endiagro\falder\api\src\controllers\orcamento.controller.js:329:51)
+{
+  "service": "agroia-api",
+  "userId": 1,
+  "body": {
+    "nome": "Teste",
+    "descricao": "Teste",
+    "ano": 2028,
+    "observacoes": "Teste",
+    "receitas": [
+      {
+        "description": "Café",
+        "quantity": 20,
+        "unitPrice": 10000,
+        "total": 200000
+      }
+    ],
+    "custos": {
+      "materials": [
+        {
+          "description": "Adubo de Semente",
+          "quantity": 20,
+          "unitCost": 20000,
+          "frequency": "Anual",
+          "total": 400000
+        }
+      ],
+      "services": [
+        {
+          "description": "Consultoria",
+          "quantity": 12,
+          "unitCost": 20000,
+          "frequency": "Mensal",
+          "total": 240000
+        }
+      ],
+      "personnel": [
+        {
+          "role": "Salario dos Assitente",
+          "quantity": 4,
+          "salary": 400000,
+          "type": "Permanente",
+          "total": 1600000
+        }
+      ],
+      "fixed": [
+        {
+          "description": "Aluger de Veiculo",
+          "quantity": 10000,
+          "unitCost": 100000,
+          "frequency": "Anual",
+          "total": 1000000000
+        }
+      ]
+    },
+    "ativos": [],
+    "sazonalidade": [
+      {
+        "mes": 1,
+        "percentual": 8.33
+      },
+      {
+        "mes": 2,
+        "percentual": 8.33
+      },
+      {
+        "mes": 3,
+        "percentual": 8.33
+      },
+      {
+        "mes": 4,
+        "percentual": 8.33
+      },
+      {
+        "mes": 5,
+        "percentual": 8.33
+      },
+      {
+        "mes": 6,
+        "percentual": 8.33
+      },
+      {
+        "mes": 7,
+        "percentual": 8.34
+      },
+      {
+        "mes": 8,
+        "percentual": 8.34
+      },
+      {
+        "mes": 9,
+        "percentual": 8.33
+      },
+      {
+        "mes": 10,
+        "percentual": 8.33
+      },
+      {
+        "mes": 11,
+        "percentual": 8.34
+      },
+      {
+        "mes": 12,
+        "percentual": 8.34
+      }
+    ]
+  }
+}
+2025-09-27 21:45:51 [[31MERROR[39M] Erro ao criar orçamento completo: invalid input value for enum "enum_Custos_tipoCusto": "fixo"
+Error
+    at Query.run (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query.js:50:25)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.insert (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:308:21)
+    at async model.save (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:2490:35)
+    at async Custo.create (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1362:12)
+    at async C:\endiagro\falder\api\src\controllers\orcamento.controller.js:300:31
+    at async Promise.all (index 0)
+    at async Promise.all (index 3)
+    at async exports.criarOrcamentoCompleto (C:\endiagro\falder\api\src\controllers\orcamento.controller.js:329:51)
+{
+  "service": "agroia-api",
+  "userId": 1,
+  "body": {
+    "nome": "Teste",
+    "descricao": "Teste",
+    "ano": 2028,
+    "observacoes": "Teste",
+    "receitas": [
+      {
+        "description": "Café",
+        "quantity": 20,
+        "unitPrice": 10000,
+        "total": 200000
+      }
+    ],
+    "custos": {
+      "materials": [
+        {
+          "description": "Adubo de Semente",
+          "quantity": 20,
+          "unitCost": 20000,
+          "frequency": "Anual",
+          "total": 400000
+        }
+      ],
+      "services": [
+        {
+          "description": "Consultoria",
+          "quantity": 12,
+          "unitCost": 20000,
+          "frequency": "Mensal",
+          "total": 240000
+        }
+      ],
+      "personnel": [
+        {
+          "role": "Salario dos Assitente",
+          "quantity": 4,
+          "salary": 400000,
+          "type": "Permanente",
+          "total": 1600000
+        }
+      ],
+      "fixed": [
+        {
+          "description": "Aluger de Veiculo",
+          "quantity": 10000,
+          "unitCost": 100000,
+          "frequency": "Anual",
+          "total": 1000000000
+        }
+      ]
+    },
+    "ativos": [],
+    "sazonalidade": [
+      {
+        "mes": 1,
+        "percentual": 8.33
+      },
+      {
+        "mes": 2,
+        "percentual": 8.33
+      },
+      {
+        "mes": 3,
+        "percentual": 8.33
+      },
+      {
+        "mes": 4,
+        "percentual": 8.33
+      },
+      {
+        "mes": 5,
+        "percentual": 8.33
+      },
+      {
+        "mes": 6,
+        "percentual": 8.33
+      },
+      {
+        "mes": 7,
+        "percentual": 8.34
+      },
+      {
+        "mes": 8,
+        "percentual": 8.34
+      },
+      {
+        "mes": 9,
+        "percentual": 8.33
+      },
+      {
+        "mes": 10,
+        "percentual": 8.33
+      },
+      {
+        "mes": 11,
+        "percentual": 8.34
+      },
+      {
+        "mes": 12,
+        "percentual": 8.34
+      }
+    ]
+  }
+}
+2025-09-27 21:46:43 [[31MERROR[39M] Erro ao criar orçamento completo: invalid input value for enum "enum_Custos_tipoCusto": "fixo"
+Error
+    at Query.run (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query.js:50:25)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.insert (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:308:21)
+    at async model.save (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:2490:35)
+    at async Custo.create (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1362:12)
+    at async C:\endiagro\falder\api\src\controllers\orcamento.controller.js:300:31
+    at async Promise.all (index 0)
+    at async Promise.all (index 3)
+    at async exports.criarOrcamentoCompleto (C:\endiagro\falder\api\src\controllers\orcamento.controller.js:329:51)
+{
+  "service": "agroia-api",
+  "userId": 1,
+  "body": {
+    "nome": "Teste",
+    "descricao": "Teste",
+    "ano": 2028,
+    "observacoes": "Teste",
+    "receitas": [
+      {
+        "description": "Café",
+        "quantity": 20,
+        "unitPrice": 10000,
+        "total": 200000
+      }
+    ],
+    "custos": {
+      "materials": [
+        {
+          "description": "Adubo de Semente",
+          "quantity": 20,
+          "unitCost": 20000,
+          "frequency": "Anual",
+          "total": 400000
+        }
+      ],
+      "services": [
+        {
+          "description": "Consultoria",
+          "quantity": 12,
+          "unitCost": 20000,
+          "frequency": "Mensal",
+          "total": 240000
+        }
+      ],
+      "personnel": [
+        {
+          "role": "Salario dos Assitente",
+          "quantity": 4,
+          "salary": 400000,
+          "type": "Permanente",
+          "total": 1600000
+        }
+      ],
+      "fixed": [
+        {
+          "description": "Aluger de Veiculo",
+          "quantity": 10000,
+          "unitCost": 100000,
+          "frequency": "Anual",
+          "total": 1000000000
+        }
+      ]
+    },
+    "ativos": [],
+    "sazonalidade": [
+      {
+        "mes": 1,
+        "percentual": 8.33
+      },
+      {
+        "mes": 2,
+        "percentual": 8.33
+      },
+      {
+        "mes": 3,
+        "percentual": 8.33
+      },
+      {
+        "mes": 4,
+        "percentual": 8.33
+      },
+      {
+        "mes": 5,
+        "percentual": 8.33
+      },
+      {
+        "mes": 6,
+        "percentual": 8.33
+      },
+      {
+        "mes": 7,
+        "percentual": 8.34
+      },
+      {
+        "mes": 8,
+        "percentual": 8.34
+      },
+      {
+        "mes": 9,
+        "percentual": 8.33
+      },
+      {
+        "mes": 10,
+        "percentual": 8.33
+      },
+      {
+        "mes": 11,
+        "percentual": 8.34
+      },
+      {
+        "mes": 12,
+        "percentual": 8.34
+      }
+    ]
+  }
+}
+2025-09-27 21:46:44 [[31MERROR[39M] Erro ao criar orçamento completo: invalid input value for enum "enum_Custos_tipoCusto": "fixo"
+Error
+    at Query.run (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query.js:50:25)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.insert (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:308:21)
+    at async model.save (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:2490:35)
+    at async Custo.create (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1362:12)
+    at async C:\endiagro\falder\api\src\controllers\orcamento.controller.js:300:31
+    at async Promise.all (index 0)
+    at async Promise.all (index 3)
+    at async exports.criarOrcamentoCompleto (C:\endiagro\falder\api\src\controllers\orcamento.controller.js:329:51)
+{
+  "service": "agroia-api",
+  "userId": 1,
+  "body": {
+    "nome": "Teste",
+    "descricao": "Teste",
+    "ano": 2028,
+    "observacoes": "Teste",
+    "receitas": [
+      {
+        "description": "Café",
+        "quantity": 20,
+        "unitPrice": 10000,
+        "total": 200000
+      }
+    ],
+    "custos": {
+      "materials": [
+        {
+          "description": "Adubo de Semente",
+          "quantity": 20,
+          "unitCost": 20000,
+          "frequency": "Anual",
+          "total": 400000
+        }
+      ],
+      "services": [
+        {
+          "description": "Consultoria",
+          "quantity": 12,
+          "unitCost": 20000,
+          "frequency": "Mensal",
+          "total": 240000
+        }
+      ],
+      "personnel": [
+        {
+          "role": "Salario dos Assitente",
+          "quantity": 4,
+          "salary": 400000,
+          "type": "Permanente",
+          "total": 1600000
+        }
+      ],
+      "fixed": [
+        {
+          "description": "Aluger de Veiculo",
+          "quantity": 10000,
+          "unitCost": 100000,
+          "frequency": "Anual",
+          "total": 1000000000
+        }
+      ]
+    },
+    "ativos": [],
+    "sazonalidade": [
+      {
+        "mes": 1,
+        "percentual": 8.33
+      },
+      {
+        "mes": 2,
+        "percentual": 8.33
+      },
+      {
+        "mes": 3,
+        "percentual": 8.33
+      },
+      {
+        "mes": 4,
+        "percentual": 8.33
+      },
+      {
+        "mes": 5,
+        "percentual": 8.33
+      },
+      {
+        "mes": 6,
+        "percentual": 8.33
+      },
+      {
+        "mes": 7,
+        "percentual": 8.34
+      },
+      {
+        "mes": 8,
+        "percentual": 8.34
+      },
+      {
+        "mes": 9,
+        "percentual": 8.33
+      },
+      {
+        "mes": 10,
+        "percentual": 8.33
+      },
+      {
+        "mes": 11,
+        "percentual": 8.34
+      },
+      {
+        "mes": 12,
+        "percentual": 8.34
+      }
+    ]
+  }
+}
+2025-09-27 21:46:45 [[31MERROR[39M] Erro ao criar orçamento completo: invalid input value for enum "enum_Custos_tipoCusto": "fixo"
+Error
+    at Query.run (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query.js:50:25)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.insert (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:308:21)
+    at async model.save (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:2490:35)
+    at async Custo.create (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1362:12)
+    at async C:\endiagro\falder\api\src\controllers\orcamento.controller.js:300:31
+    at async Promise.all (index 0)
+    at async Promise.all (index 3)
+    at async exports.criarOrcamentoCompleto (C:\endiagro\falder\api\src\controllers\orcamento.controller.js:329:51)
+{
+  "service": "agroia-api",
+  "userId": 1,
+  "body": {
+    "nome": "Teste",
+    "descricao": "Teste",
+    "ano": 2028,
+    "observacoes": "Teste",
+    "receitas": [
+      {
+        "description": "Café",
+        "quantity": 20,
+        "unitPrice": 10000,
+        "total": 200000
+      }
+    ],
+    "custos": {
+      "materials": [
+        {
+          "description": "Adubo de Semente",
+          "quantity": 20,
+          "unitCost": 20000,
+          "frequency": "Anual",
+          "total": 400000
+        }
+      ],
+      "services": [
+        {
+          "description": "Consultoria",
+          "quantity": 12,
+          "unitCost": 20000,
+          "frequency": "Mensal",
+          "total": 240000
+        }
+      ],
+      "personnel": [
+        {
+          "role": "Salario dos Assitente",
+          "quantity": 4,
+          "salary": 400000,
+          "type": "Permanente",
+          "total": 1600000
+        }
+      ],
+      "fixed": [
+        {
+          "description": "Aluger de Veiculo",
+          "quantity": 10000,
+          "unitCost": 100000,
+          "frequency": "Anual",
+          "total": 1000000000
+        }
+      ]
+    },
+    "ativos": [],
+    "sazonalidade": [
+      {
+        "mes": 1,
+        "percentual": 8.33
+      },
+      {
+        "mes": 2,
+        "percentual": 8.33
+      },
+      {
+        "mes": 3,
+        "percentual": 8.33
+      },
+      {
+        "mes": 4,
+        "percentual": 8.33
+      },
+      {
+        "mes": 5,
+        "percentual": 8.33
+      },
+      {
+        "mes": 6,
+        "percentual": 8.33
+      },
+      {
+        "mes": 7,
+        "percentual": 8.34
+      },
+      {
+        "mes": 8,
+        "percentual": 8.34
+      },
+      {
+        "mes": 9,
+        "percentual": 8.33
+      },
+      {
+        "mes": 10,
+        "percentual": 8.33
+      },
+      {
+        "mes": 11,
+        "percentual": 8.34
+      },
+      {
+        "mes": 12,
+        "percentual": 8.34
+      }
+    ]
+  }
+}
+2025-09-27 21:46:45 [[31MERROR[39M] Erro ao criar orçamento completo: invalid input value for enum "enum_Custos_tipoCusto": "fixo"
+Error
+    at Query.run (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query.js:50:25)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.insert (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:308:21)
+    at async model.save (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:2490:35)
+    at async Custo.create (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1362:12)
+    at async C:\endiagro\falder\api\src\controllers\orcamento.controller.js:300:31
+    at async Promise.all (index 0)
+    at async Promise.all (index 3)
+    at async exports.criarOrcamentoCompleto (C:\endiagro\falder\api\src\controllers\orcamento.controller.js:329:51)
+{
+  "service": "agroia-api",
+  "userId": 1,
+  "body": {
+    "nome": "Teste",
+    "descricao": "Teste",
+    "ano": 2028,
+    "observacoes": "Teste",
+    "receitas": [
+      {
+        "description": "Café",
+        "quantity": 20,
+        "unitPrice": 10000,
+        "total": 200000
+      }
+    ],
+    "custos": {
+      "materials": [
+        {
+          "description": "Adubo de Semente",
+          "quantity": 20,
+          "unitCost": 20000,
+          "frequency": "Anual",
+          "total": 400000
+        }
+      ],
+      "services": [
+        {
+          "description": "Consultoria",
+          "quantity": 12,
+          "unitCost": 20000,
+          "frequency": "Mensal",
+          "total": 240000
+        }
+      ],
+      "personnel": [
+        {
+          "role": "Salario dos Assitente",
+          "quantity": 4,
+          "salary": 400000,
+          "type": "Permanente",
+          "total": 1600000
+        }
+      ],
+      "fixed": [
+        {
+          "description": "Aluger de Veiculo",
+          "quantity": 10000,
+          "unitCost": 100000,
+          "frequency": "Anual",
+          "total": 1000000000
+        }
+      ]
+    },
+    "ativos": [],
+    "sazonalidade": [
+      {
+        "mes": 1,
+        "percentual": 8.33
+      },
+      {
+        "mes": 2,
+        "percentual": 8.33
+      },
+      {
+        "mes": 3,
+        "percentual": 8.33
+      },
+      {
+        "mes": 4,
+        "percentual": 8.33
+      },
+      {
+        "mes": 5,
+        "percentual": 8.33
+      },
+      {
+        "mes": 6,
+        "percentual": 8.33
+      },
+      {
+        "mes": 7,
+        "percentual": 8.34
+      },
+      {
+        "mes": 8,
+        "percentual": 8.34
+      },
+      {
+        "mes": 9,
+        "percentual": 8.33
+      },
+      {
+        "mes": 10,
+        "percentual": 8.33
+      },
+      {
+        "mes": 11,
+        "percentual": 8.34
+      },
+      {
+        "mes": 12,
+        "percentual": 8.34
+      }
+    ]
+  }
+}
+2025-09-28 08:36:24 [[31MERROR[39M] Erro no login: 
+SequelizeConnectionRefusedError
+    at Client._connectionCallback (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\connection-manager.js:133:24)
+    at Client._handleErrorWhileConnecting (C:\endiagro\falder\api\node_modules\pg\lib\client.js:336:19)
+    at Client._handleErrorEvent (C:\endiagro\falder\api\node_modules\pg\lib\client.js:346:19)
+    at Connection.emit (node:events:518:28)
+    at Socket.reportStreamError (C:\endiagro\falder\api\node_modules\pg\lib\connection.js:57:12)
+    at Socket.emit (node:events:518:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+{
+  "service": "agroia-api"
+}
+2025-09-28 08:36:24 [[31MERROR[39M] 500 - Something went wrong! - /api/auth/login - POST - ::1
+SequelizeConnectionRefusedError
+    at Client._connectionCallback (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\connection-manager.js:133:24)
+    at Client._handleErrorWhileConnecting (C:\endiagro\falder\api\node_modules\pg\lib\client.js:336:19)
+    at Client._handleErrorEvent (C:\endiagro\falder\api\node_modules\pg\lib\client.js:346:19)
+    at Connection.emit (node:events:518:28)
+    at Socket.reportStreamError (C:\endiagro\falder\api\node_modules\pg\lib\connection.js:57:12)
+    at Socket.emit (node:events:518:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+{
+  "service": "agroia-api",
+  "request": {
+    "method": "POST",
+    "url": "/api/auth/login",
+    "headers": {
+      "host": "localhost:5000",
+      "connection": "keep-alive",
+      "content-length": "49",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "accept": "application/json",
+      "sec-ch-ua": "\"Chromium\";v=\"140\", \"Not=A?Brand\";v=\"24\", \"Brave\";v=\"140\"",
+      "content-type": "application/json",
+      "sec-ch-ua-mobile": "?0",
+      "sec-gpc": "1",
+      "accept-language": "pt-PT,pt;q=0.8",
+      "origin": "http://localhost:5173",
+      "sec-fetch-site": "same-site",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-dest": "empty",
+      "referer": "http://localhost:5173/",
+      "accept-encoding": "gzip, deflate, br, zstd"
+    },
+    "body": {
+      "email": "admin@endiagro.com",
+      "senha": "admin123"
+    },
+    "params": {},
+    "query": {},
+    "user": "not authenticated"
+  }
+}
+2025-09-28 08:42:22 [[31MERROR[39M] Erro ao criar orçamento completo: Cannot read properties of undefined (reading 'replace')
+TypeError: Cannot read properties of undefined (reading 'replace')
+    at Object.removeTicks (C:\endiagro\falder\api\node_modules\sequelize\lib\utils.js:281:12)
+    at PostgresQueryGenerator.quoteIdentifier [as _quoteIdentifier] (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query-generator.js:663:33)
+    at PostgresQueryGenerator.quoteIdentifier (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-generator.js:696:19)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-generator.js:1168:74
+    at Array.map (<anonymous>)
+    at PostgresQueryGenerator.generateInclude (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-generator.js:1141:52)
+    at PostgresQueryGenerator.selectQuery (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-generator.js:891:34)
+    at PostgresQueryInterface.select (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:407:59)
+    at Orcamento.findAll (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1140:47)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+{
+  "service": "agroia-api",
+  "userId": 1,
+  "body": {
+    "nome": "Orçamento 2026",
+    "descricao": "",
+    "ano": 2026,
+    "observacoes": "",
+    "receitas": [
+      {
+        "description": "Milho",
+        "quantity": 120,
+        "unitPrice": 50000,
+        "total": 6000000
+      },
+      {
+        "description": "Soja",
+        "quantity": 10,
+        "unitPrice": 200000,
+        "total": 2000000
+      }
+    ],
+    "custos": {
+      "materials": [
+        {
+          "description": "Semente de Milho",
+          "quantity": 20,
+          "unitCost": 20000,
+          "frequency": "Único",
+          "total": 400000
+        },
+        {
+          "description": "Semente de Soja",
+          "quantity": 30,
+          "unitCost": 35000,
+          "frequency": "Único",
+          "total": 1050000
+        }
+      ],
+      "services": [
+        {
+          "description": "Consultoria",
+          "quantity": 1,
+          "unitCost": 2000000,
+          "frequency": "Único",
+          "total": 2000000
+        }
+      ],
+      "personnel": [
+        {
+          "role": "Gerente",
+          "quantity": 2,
+          "salary": 5000000,
+          "type": "Permanente",
+          "total": 10000000
+        },
+        {
+          "role": "Assistente",
+          "quantity": 4,
+          "salary": 400000,
+          "type": "Permanente",
+          "total": 1600000
+        }
+      ],
+      "fixed": []
+    },
+    "ativos": [],
+    "sazonalidade": [
+      {
+        "mes": 1,
+        "percentual": 8.33
+      },
+      {
+        "mes": 2,
+        "percentual": 8.33
+      },
+      {
+        "mes": 3,
+        "percentual": 8.33
+      },
+      {
+        "mes": 4,
+        "percentual": 8.33
+      },
+      {
+        "mes": 5,
+        "percentual": 8
+      },
+      {
+        "mes": 6,
+        "percentual": 7
+      },
+      {
+        "mes": 7,
+        "percentual": 6
+      },
+      {
+        "mes": 8,
+        "percentual": 8
+      },
+      {
+        "mes": 9,
+        "percentual": 10
+      },
+      {
+        "mes": 10,
+        "percentual": 9
+      },
+      {
+        "mes": 11,
+        "percentual": 10.35
+      },
+      {
+        "mes": 12,
+        "percentual": 8.33
+      }
+    ]
+  }
+}
+2025-09-28 08:42:22 [[31MERROR[39M] 500 - Cannot read properties of undefined (reading 'replace') - /api/orcamentos/novo-orcamento - POST - ::1
+TypeError: Cannot read properties of undefined (reading 'replace')
+    at Object.removeTicks (C:\endiagro\falder\api\node_modules\sequelize\lib\utils.js:281:12)
+    at PostgresQueryGenerator.quoteIdentifier [as _quoteIdentifier] (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\postgres\query-generator.js:663:33)
+    at PostgresQueryGenerator.quoteIdentifier (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-generator.js:696:19)
+    at C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-generator.js:1168:74
+    at Array.map (<anonymous>)
+    at PostgresQueryGenerator.generateInclude (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-generator.js:1141:52)
+    at PostgresQueryGenerator.selectQuery (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-generator.js:891:34)
+    at PostgresQueryInterface.select (C:\endiagro\falder\api\node_modules\sequelize\lib\dialects\abstract\query-interface.js:407:59)
+    at Orcamento.findAll (C:\endiagro\falder\api\node_modules\sequelize\lib\model.js:1140:47)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+{
+  "service": "agroia-api",
+  "request": {
+    "method": "POST",
+    "url": "/api/orcamentos/novo-orcamento",
+    "headers": {
+      "host": "localhost:5000",
+      "connection": "keep-alive",
+      "content-length": "1118",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbmRpYWdyby5jb20iLCJub21lIjoiQWRtaW5pc3RyYWRvciIsInRpcG8iOiJhY2Nlc3MiLCJpYXQiOjE3NTkwNDUwMjcsImV4cCI6MTc1OTY0OTgyNywiYXVkIjoiYWdyb2lhLWZyb250ZW5kIiwiaXNzIjoiYWdyb2lhLWFwaSJ9.jP-NgIV3fQwchnTZYxoRQTBdiNgMCbNgmlD4_f7Nw1s",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "accept": "application/json",
+      "sec-ch-ua": "\"Chromium\";v=\"140\", \"Not=A?Brand\";v=\"24\", \"Brave\";v=\"140\"",
+      "content-type": "application/json",
+      "sec-ch-ua-mobile": "?0",
+      "sec-gpc": "1",
+      "accept-language": "pt-PT,pt;q=0.8",
+      "origin": "http://localhost:5173",
+      "sec-fetch-site": "same-site",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-dest": "empty",
+      "referer": "http://localhost:5173/",
+      "accept-encoding": "gzip, deflate, br, zstd"
+    },
+    "body": {
+      "nome": "Orçamento 2026",
+      "descricao": "",
+      "ano": 2026,
+      "observacoes": "",
+      "receitas": [
+        {
+          "description": "Milho",
+          "quantity": 120,
+          "unitPrice": 50000,
+          "total": 6000000
+        },
+        {
+          "description": "Soja",
+          "quantity": 10,
+          "unitPrice": 200000,
+          "total": 2000000
+        }
+      ],
+      "custos": {
+        "materials": [
+          {
+            "description": "Semente de Milho",
+            "quantity": 20,
+            "unitCost": 20000,
+            "frequency": "Único",
+            "total": 400000
+          },
+          {
+            "description": "Semente de Soja",
+            "quantity": 30,
+            "unitCost": 35000,
+            "frequency": "Único",
+            "total": 1050000
+          }
+        ],
+        "services": [
+          {
+            "description": "Consultoria",
+            "quantity": 1,
+            "unitCost": 2000000,
+            "frequency": "Único",
+            "total": 2000000
+          }
+        ],
+        "personnel": [
+          {
+            "role": "Gerente",
+            "quantity": 2,
+            "salary": 5000000,
+            "type": "Permanente",
+            "total": 10000000
+          },
+          {
+            "role": "Assistente",
+            "quantity": 4,
+            "salary": 400000,
+            "type": "Permanente",
+            "total": 1600000
+          }
+        ],
+        "fixed": []
+      },
+      "ativos": [],
+      "sazonalidade": [
+        {
+          "mes": 1,
+          "percentual": 8.33
+        },
+        {
+          "mes": 2,
+          "percentual": 8.33
+        },
+        {
+          "mes": 3,
+          "percentual": 8.33
+        },
+        {
+          "mes": 4,
+          "percentual": 8.33
+        },
+        {
+          "mes": 5,
+          "percentual": 8
+        },
+        {
+          "mes": 6,
+          "percentual": 7
+        },
+        {
+          "mes": 7,
+          "percentual": 6
+        },
+        {
+          "mes": 8,
+          "percentual": 8
+        },
+        {
+          "mes": 9,
+          "percentual": 10
+        },
+        {
+          "mes": 10,
+          "percentual": 9
+        },
+        {
+          "mes": 11,
+          "percentual": 10.35
+        },
+        {
+          "mes": 12,
+          "percentual": 8.33
+        }
+      ]
+    },
+    "params": {},
+    "query": {},
+    "user": 1
+  }
+}
+2025-09-28 08:59:47 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-28 09:00:46 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-28 09:01:28 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-28 09:02:46 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-28 09:03:42 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-28 09:05:15 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-28 09:06:56 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-28 09:21:04 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-28 09:59:14 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-28 10:03:35 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-28 16:50:59 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-28 16:51:19 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}
+2025-09-28 16:54:01 [[31MERROR[39M] Error: Cannot read properties of undefined (reading 'error')
+{
+  "service": "agroia-api"
+}

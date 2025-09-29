@@ -133,7 +133,7 @@ const VerOrcamento = () => {
   }, [id]);
 
   const handleVoltar = () => {
-    navigate('/orcamento');
+    navigate('/tela-orcamento');
   };
 
   // SISTEMA COMPLETO DE GERAÇÃO DE PDF - VERSÃO FINAL

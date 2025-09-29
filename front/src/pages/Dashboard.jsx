@@ -352,7 +352,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-green-400 text-sm">docs processados</span>
+                  <span className="text-green-400 text-sm">Vizualie os docs processados</span>
                   <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
                 </div>
               </div>
@@ -372,7 +372,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-purple-400 text-sm">95% precisão</span>
+                  <span className="text-purple-400 text-sm">verifica a media de confinça</span>
                   <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
                 </div>
               </div>
@@ -392,7 +392,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-yellow-400 text-sm">12 orçamentos</span>
+                  <span className="text-yellow-400 text-sm">Liste todos os orçamentos</span>
                   <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
                 </div>
               </div>
@@ -412,7 +412,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-indigo-400 text-sm">8 planos ativos</span>
+                  <span className="text-indigo-400 text-sm">Verifica os seus plano</span>
                   <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
                 </div>
               </div>
@@ -432,7 +432,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-red-400 text-sm">3 riscos críticos</span>
+                  <span className="text-red-400 text-sm">verifique riscos críticos</span>
                   <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
                 </div>
               </div>
@@ -472,7 +472,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-teal-400 text-sm">78% executado</span>
+                  <span className="text-teal-400 text-sm"></span>
                   <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
                 </div>
               </div>
@@ -492,7 +492,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-orange-400 text-sm">5 planos ativos</span>
+                  <span className="text-orange-400 text-sm"></span>
                   <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
                 </div>
               </div>
@@ -512,7 +512,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-pink-400 text-sm">12 relatórios</span>
+                  <span className="text-pink-400 text-sm"></span>
                   <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all" />
                 </div>
               </div>

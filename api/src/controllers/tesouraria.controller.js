@@ -102,6 +102,20 @@ const criarPlano = async (req, res) => {
         message: `Não existe orçamento aprovado para o ano ${ano}. É necessário criar e aprovar um orçamento primeiro.`
       });
     }
+    //verifica se ja existe um plano para o mes e ano
+    const planoExistente = await PlanoTesouraria.findOne({
+      where: {
+        empresaId: req.user.empresaId,
+        mes,
+        ano
+      }
+    });
+    if (planoExistente) {
+      return res.status(400).json({
+        success: false,
+        message: `Já existe um plano de tesouraria para  ${mes}/${ano}.`
+      });
+    }
 
     // 2. Calcular totais do orçamento
     const totaisOrcamento = calcularTotaisOrcamento(orcamentoAprovado);
@@ -129,7 +143,7 @@ const criarPlano = async (req, res) => {
     // 6. Criar plano
     const plano = await PlanoTesouraria.create({
       nome: `Plano de Tesouraria ${mes}/${ano}`,
-      descricao: `Plano baseado no orçamento ${orcamentoAprovado.nome}`,
+      descricao: `Plano baseado no orçamento do ano ${orcamentoAprovado.ano}`,
       mes,
       ano,
       saldoInicial,
@@ -153,7 +167,7 @@ const criarPlano = async (req, res) => {
     res.status(201).json({
       success: true,
       message: mensagem,
-      data: planoCompleto,
+      data: plano,
       necessidadeFinanciamento
     });
 

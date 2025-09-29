@@ -759,7 +759,7 @@ const NovoOrcamento = () => {
       if (response.data && response.data.orcamento) {
         localStorage.removeItem('novoOrcamentoDraft');
         
-        navigate('/orcamento', { 
+        navigate('/tela-orcamento', { 
           state: { 
             message: 'Orçamento criado com sucesso!',
             type: 'success'

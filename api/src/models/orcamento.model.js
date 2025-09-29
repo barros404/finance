@@ -26,7 +26,7 @@ module.exports = (sequelize) => {
     status: {
       type: DataTypes.ENUM('rascunho', 'em_analise', 'aprovado', 'rejeitado', 'arquivado'),
       allowNull: false,
-      defaultValue: 'rascunho',
+      defaultValue: 'em_analise',
       comment: 'Status do orçamento'
     },
     empresaId: {

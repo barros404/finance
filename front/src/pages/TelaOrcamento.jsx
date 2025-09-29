@@ -21,7 +21,7 @@ const TelaOrcamento = () => {
   });
   const [estatisticas, setEstatisticas] = useState({
     totalPlanos: 0,
-    estatisticasStatus: [],
+    estatisticasStatus:{},
     valoresPorAno: []
   });
 
@@ -122,8 +122,9 @@ const TelaOrcamento = () => {
       
       console.log('📥 Resposta da API de estatísticas:', response);
       
-      if (response.success && response.data) {
-        const {estatisticas}=response.dataM
+      
+      if (response.status=='success' && response.data) {
+        const {estatisticas}=response.data
         setEstatisticas({
         totalPlanos: estatisticas.total,
         estatisticasStatus:estatisticas.porStatus,
@@ -236,7 +237,9 @@ const TelaOrcamento = () => {
         {/* Main Content */}
         <main className="max-w-7xl mx-auto mt-28 px-10 pb-10">
 
-          {/* Dashboard de Estatísticas */}
+          {/* Dashboard de Estatísticas */
+          console.log('Dados',estatisticas)
+          }
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
               <div className="flex items-center justify-between">
@@ -258,7 +261,7 @@ const TelaOrcamento = () => {
                 <div>
                   <p className="text-sm font-semibold text-white/80 mb-1">Aprovados</p>
                   <p className="text-3xl font-bold bg-gradient-to-b from-white to-gray-200 bg-clip-text text-transparent">
-                    {estatisticas.estatisticasStatus?.find(s => s.status === 'aprovado')?.total || 0}
+                    {estatisticas.estatisticasStatus?.aprovado  || 0}
                   </p>
                   <p className="text-xs text-white/60 mt-1">Planos aprovados</p>
                 </div>
@@ -273,7 +276,7 @@ const TelaOrcamento = () => {
                 <div>
                   <p className="text-sm font-semibold text-white/80 mb-1">Em Análise</p>
                   <p className="text-3xl font-bold bg-gradient-to-b from-white to-gray-200 bg-clip-text text-transparent">
-                    {estatisticas.estatisticasStatus?.find(s => s.status === 'em_analise')?.total || 0}
+                    {estatisticas.estatisticasStatus?.em_analise|| 0}
                   </p>
                   <p className="text-xs text-white/60 mt-1">Aguardando aprovação</p>
                 </div>
@@ -288,7 +291,7 @@ const TelaOrcamento = () => {
                 <div>
                   <p className="text-sm font-semibold text-white/80 mb-1">Rascunhos</p>
                   <p className="text-3xl font-bold bg-gradient-to-b from-white to-gray-200 bg-clip-text text-transparent">
-                    {estatisticas.estatisticasStatus?.find(s => s.status === 'rascunho')?.total || 0}
+                    {estatisticas.estatisticasStatus?.rascunho || 0}
                   </p>
                   <p className="text-xs text-white/60 mt-1">Em desenvolvimento</p>
                 </div>

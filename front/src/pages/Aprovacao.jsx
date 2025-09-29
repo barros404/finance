@@ -34,8 +34,8 @@ const Aprovacao = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [filtros, setFiltros] = useState({
-    tipo: 'todos', // orcamento, plano, execucao_orcamental, plano_execucao, todos
-    status: 'pendente', // pendente, aprovado, rejeitado, todos
+    tipo: '', // orcamento, plano, ''
+    status: 'em_analise', // em_analise, aprovado, rejeitado, todos
     dataInicio: '',
     dataFim: '',
     busca: '',
@@ -99,20 +99,41 @@ const Aprovacao = () => {
 
   const getCorStatus = (status) => {
     const cores = {
-      pendente: 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30',
+      em_analise: 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30',
       aprovado: 'text-green-400 bg-green-500/20 border-green-500/30',
-      rejeitado: 'text-red-400 bg-red-500/20 border-red-500/30'
+      rejeitado: 'text-red-400 bg-red-500/20 border-red-500/30',
+      pendente: 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30'
     };
     return cores[status] || 'text-gray-400 bg-gray-500/20 border-gray-500/30';
   };
 
   const getNomeStatus = (status) => {
     const nomes = {
-      pendente: 'Pendente',
+      em_analise: 'Em Análise',
       aprovado: 'Aprovado',
-      rejeitado: 'Rejeitado'
+      rejeitado: 'Rejeitado',
+      pendente: 'Pendente'
     };
     return nomes[status] || 'Desconhecido';
+  };
+
+  // Mapear dados da API para o formato esperado pelo componente
+  const mapearItemAPI = (item) => {
+    return {
+      id: item.id,
+      nome: item.nome,
+      descricao: item.descricao || 'Sem descrição',
+      tipo: item.tipo,
+      status: item.status,
+      valor: item.valor || 0,
+      prioridade: item.prioridade || 'media',
+      solicitante: item.criador?.nome || 'N/A',
+      departamento: item.departamento || 'Geral',
+      dataEnvio: item.createdAt,
+      observacoes: item.observacoes || '',
+      tags: item.tags || [],
+      anexos: item.anexos || []
+    };
   };
 
   // Carregar itens pendentes de aprovação
@@ -124,54 +145,84 @@ const Aprovacao = () => {
       
       // Usar o serviço de aprovação
       const response = await aprovacaoService.listarItensPendentes(filtros);
-      const itensSimulados = response.data || [];
-
-      // Aplicar filtros
-      let itensFiltrados = itensSimulados;
+      console.log('✅ Resposta completa da API:', response);
       
-      if (filtros.tipo !== 'todos') {
+      if (!response || !response.data) {
+        throw new Error('Resposta da API inválida');
+      }
+
+      const itensDaAPI = response.data;
+      console.log('✅ Itens recebidos da API:', itensDaAPI);
+
+      // Mapear os itens para o formato esperado
+      const itensMapeados = itensDaAPI.map(mapearItemAPI);
+      console.log('✅ Itens mapeados:', itensMapeados);
+
+      // Aplicar filtros locais (se necessário)
+      let itensFiltrados = itensMapeados;
+      
+      if (filtros.tipo && filtros.tipo !== 'todos') {
         itensFiltrados = itensFiltrados.filter(i => i.tipo === filtros.tipo);
       }
       
-      if (filtros.status !== 'todos') {
+      if (filtros.status && filtros.status !== 'todos') {
         itensFiltrados = itensFiltrados.filter(i => i.status === filtros.status);
       }
       
       if (filtros.busca) {
+        const buscaLower = filtros.busca.toLowerCase();
         itensFiltrados = itensFiltrados.filter(i => 
-          i.nome.toLowerCase().includes(filtros.busca.toLowerCase()) ||
-          i.descricao.toLowerCase().includes(filtros.busca.toLowerCase()) ||
-          i.solicitante.toLowerCase().includes(filtros.busca.toLowerCase()) ||
-          i.tags.some(tag => tag.toLowerCase().includes(filtros.busca.toLowerCase()))
+          i.nome.toLowerCase().includes(buscaLower) ||
+          i.descricao.toLowerCase().includes(buscaLower) ||
+          i.solicitante.toLowerCase().includes(buscaLower) ||
+          (i.tags && i.tags.some(tag => tag.toLowerCase().includes(buscaLower)))
         );
       }
 
-      // Paginação
-      const inicio = (filtros.pagina - 1) * filtros.limite;
-      const fim = inicio + filtros.limite;
-      const itensPaginados = itensFiltrados.slice(inicio, fim);
+      console.log('✅ Itens após filtros:', itensFiltrados);
+
+      // Usar paginação da API se disponível, caso contrário usar paginação local
+      const paginacaoAPI = response.pagination;
+      let itensPaginados = itensFiltrados;
+      let infoPaginacao;
+
+      if (paginacaoAPI) {
+        // API já fez a paginação
+        infoPaginacao = {
+          totalItens: paginacaoAPI.totalItens,
+          totalPaginas: paginacaoAPI.totalPaginas,
+          paginaAtual: paginacaoAPI.pagina
+        };
+      } else {
+        // Paginação local
+        const inicio = (filtros.pagina - 1) * filtros.limite;
+        const fim = inicio + filtros.limite;
+        itensPaginados = itensFiltrados.slice(inicio, fim);
+        
+        infoPaginacao = {
+          totalItens: itensFiltrados.length,
+          totalPaginas: Math.ceil(itensFiltrados.length / filtros.limite),
+          paginaAtual: filtros.pagina
+        };
+      }
 
       setItensPendentes(itensPaginados);
-      setPaginacao({
-        totalItens: itensFiltrados.length,
-        totalPaginas: Math.ceil(itensFiltrados.length / filtros.limite),
-        paginaAtual: filtros.pagina
-      });
+      setPaginacao(infoPaginacao);
 
       // Calcular estatísticas
       const stats = {
-        totalPendentes: itensSimulados.filter(i => i.status === 'pendente').length,
-        orcamentosPendentes: itensSimulados.filter(i => i.tipo === 'orcamento' && i.status === 'pendente').length,
-        planosPendentes: itensSimulados.filter(i => i.tipo === 'plano' && i.status === 'pendente').length,
-        execucoesPendentes: itensSimulados.filter(i => i.tipo === 'execucao_orcamental' && i.status === 'pendente').length,
-        planosExecucaoPendentes: itensSimulados.filter(i => i.tipo === 'plano_execucao' && i.status === 'pendente').length,
-        aprovadosHoje: 0, // Simular dados
-        rejeitadosHoje: 0, // Simular dados
-        tempoMedioAprovacao: 2.5 // Simular dados
+        totalPendentes: itensMapeados.filter(i => i.status === 'em_analise' || i.status === 'pendente').length,
+        orcamentosPendentes: itensMapeados.filter(i => i.tipo === 'orcamento' && (i.status === 'em_analise' || i.status === 'pendente')).length,
+        planosPendentes: itensMapeados.filter(i => i.tipo === 'plano' && (i.status === 'em_analise' || i.status === 'pendente')).length,
+        execucoesPendentes: itensMapeados.filter(i => i.tipo === 'execucao_orcamental' && (i.status === 'em_analise' || i.status === 'pendente')).length,
+        planosExecucaoPendentes: itensMapeados.filter(i => i.tipo === 'plano_execucao' && (i.status === 'em_analise' || i.status === 'pendente')).length,
+        aprovadosHoje: itensMapeados.filter(i => i.status === 'aprovado').length, // Simplificado
+        rejeitadosHoje: itensMapeados.filter(i => i.status === 'rejeitado').length, // Simplificado
+        tempoMedioAprovacao: 2.5
       };
       setEstatisticas(stats);
 
-      console.log('✅ Itens pendentes carregados:', itensPaginados);
+      console.log('✅ Itens pendentes carregados com sucesso:', itensPaginados);
     } catch (err) {
       console.error('❌ Erro ao carregar itens pendentes:', err);
       setError(`Erro ao carregar itens pendentes: ${err.message}`);
@@ -188,11 +239,11 @@ const Aprovacao = () => {
 
   // Handlers
   const handleFiltrarTipo = (tipo) => {
-    setFiltros(prev => ({ ...prev, tipo, pagina: 1 }));
+    setFiltros(prev => ({ ...prev, tipo: tipo === 'todos' ? '' : tipo, pagina: 1 }));
   };
 
   const handleFiltrarStatus = (status) => {
-    setFiltros(prev => ({ ...prev, status, pagina: 1 }));
+    setFiltros(prev => ({ ...prev, status: status === 'todos' ? '' : status, pagina: 1 }));
   };
 
   const handleBuscar = (busca) => {
@@ -212,8 +263,10 @@ const Aprovacao = () => {
     try {
       console.log('✅ Aprovando item:', itemId, observacoes);
       
-      // Usar o serviço de aprovação
+      
+      // Encontrar o item original para obter o tipo
       const item = itensPendentes.find(item => item.id === itemId);
+      console.log('Daod',item.tipo)
       if (item) {
         await aprovacaoService.aprovarItem(itemId, item.tipo, observacoes);
       }
@@ -239,7 +292,7 @@ const Aprovacao = () => {
       
       console.log('❌ Rejeitando item:', itemId, motivo);
       
-      // Usar o serviço de aprovação para rejeição
+      // Encontrar o item original para obter o tipo
       const item = itensPendentes.find(item => item.id === itemId);
       if (item) {
         await aprovacaoService.rejeitarItem(itemId, item.tipo, motivo);
@@ -259,14 +312,17 @@ const Aprovacao = () => {
 
   const handleVerDetalhes = (item) => {
     setMostrarModalAprovacao(false);
-    if (item.tipo === 'orcamento') {
-      navigate(`/visualizar-orcamento/${item.id}`, { state: { item, fromApproval: true } });
-    } else if (item.tipo === 'plano') {
-      navigate(`/visualizar-plano/${item.id}`, { state: { item, fromApproval: true } });
-    } else if (item.tipo === 'execucao_orcamental') {
-      navigate(`/visualizar-execucao-orcamental/${item.id}`, { state: { item, fromApproval: true } });
-    } else if (item.tipo === 'plano_execucao') {
-      navigate(`/visualizar-plano-execucao/${item.id}`, { state: { item, fromApproval: true } });
+    // Navegação baseada no tipo do item
+    const rotas = {
+      orcamento: `/visualizar-orcamento/${item.id}`,
+      plano: `/visualizar-plano/${item.id}`,
+      execucao_orcamental: `/visualizar-execucao-orcamental/${item.id}`,
+      plano_execucao: `/visualizar-plano-execucao/${item.id}`
+    };
+    
+    const rota = rotas[item.tipo];
+    if (rota) {
+      navigate(rota, { state: { item, fromApproval: true } });
     }
   };
 
@@ -291,7 +347,13 @@ const Aprovacao = () => {
 
   const handleAprovarSelecionados = async () => {
     try {
-      console.log('✅ Aprovando itens selecionados:', selectedItems);
+      for (const itemId of selectedItems) {
+        const item = itensPendentes.find(item => item.id === itemId);
+        if (item) {
+          await aprovacaoService.aprovarItem(itemId, item.tipo);
+        }
+      }
+      
       setSuccess(`${selectedItems.length} itens aprovados com sucesso!`);
       setTimeout(() => setSuccess(null), 3000);
       setSelectedItems([]);
@@ -360,7 +422,7 @@ const Aprovacao = () => {
         )}
 
         {/* Cards de Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
             <div className="flex items-center justify-between">
               <div>
@@ -406,65 +468,9 @@ const Aprovacao = () => {
             </div>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-white/80 mb-1">Execuções Pendentes</p>
-                <p className="text-3xl font-bold bg-gradient-to-b from-purple-400 to-purple-300 bg-clip-text text-transparent">
-                  {estatisticas.execucoesPendentes}
-                </p>
-                <p className="text-xs text-white/60 mt-1">Execuções aguardando</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-[#a855f7] to-[#7c3aed] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#a855f7]/30">
-                <Activity className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-white/80 mb-1">Planos Execução Pendentes</p>
-                <p className="text-3xl font-bold bg-gradient-to-b from-orange-400 to-orange-300 bg-clip-text text-transparent">
-                  {estatisticas.planosExecucaoPendentes}
-                </p>
-                <p className="text-xs text-white/60 mt-1">Planos execução aguardando</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#f97316]/30">
-                <Target className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-white/80 mb-1">Aprovados Hoje</p>
-                <p className="text-3xl font-bold bg-gradient-to-b from-green-400 to-green-300 bg-clip-text text-transparent">
-                  {estatisticas.aprovadosHoje}
-                </p>
-                <p className="text-xs text-white/60 mt-1">Itens aprovados hoje</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-[#10b981] to-[#059669] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#10b981]/30">
-                <CheckCircle className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
           
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-white/80 mb-1">Rejeitados Hoje</p>
-                <p className="text-3xl font-bold bg-gradient-to-b from-red-400 to-red-300 bg-clip-text text-transparent">
-                  {estatisticas.rejeitadosHoje}
-                </p>
-                <p className="text-xs text-white/60 mt-1">Itens rejeitados hoje</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-[#ef4444] to-[#dc2626] rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-[#ef4444]/30">
-                <XCircle className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
+
+          
           
           <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:bg-white/8 hover:shadow-2xl hover:shadow-black/30">
             <div className="flex items-center justify-between">
@@ -493,11 +499,9 @@ const Aprovacao = () => {
                   value={filtros.tipo}
                   onChange={(e) => handleFiltrarTipo(e.target.value)}
                 >
-                  <option value="todos">Todos os Tipos</option>
+                  <option value="">Todos os Tipos</option>
                   <option value="orcamento">Orçamentos</option>
                   <option value="plano">Planos</option>
-                  <option value="execucao_orcamental">Execuções Orçamentais</option>
-                  <option value="plano_execucao">Planos em Execução</option>
                 </select>
               </div>
               
@@ -508,8 +512,8 @@ const Aprovacao = () => {
                   value={filtros.status}
                   onChange={(e) => handleFiltrarStatus(e.target.value)}
                 >
-                  <option value="todos">Todos os Status</option>
-                  <option value="pendente">Pendente</option>
+                  <option value="">Todos os Status</option>
+                  <option value="em_analise">Pendente</option>
                   <option value="aprovado">Aprovado</option>
                   <option value="rejeitado">Rejeitado</option>
                 </select>

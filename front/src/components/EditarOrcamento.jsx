@@ -98,7 +98,7 @@ const EditarOrcamento = () => {
   }, [id]);
 
   const handleVoltar = () => {
-    navigate('/orcamentos');
+    navigate('/tela-orcamento');
   };
 
   const handleInputChange = (field, value) => {
@@ -294,8 +294,8 @@ const EditarOrcamento = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white">
       {/* Header */}
-      <header className="bg-white/5 backdrop-blur-md border-b border-white/10 py-5 px-10 fixed w-full top-0 z-40">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+     <header className="bg-white/5 backdrop-blur-md border-b border-white/10 py-5 px-10 fixed w-full top-0 z-40 animate-slideDown">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
             <button
               onClick={handleVoltar}

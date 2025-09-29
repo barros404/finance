@@ -74,7 +74,7 @@ router.use(protect);
 router.get(
   '/pendentes',
   [
-    query('tipo').optional().isIn(['orcamento', 'tesouraria', 'execucao']),
+    query('tipo').optional().isIn(['orcamento', 'plano', 'todos']),
     query('departamento').optional().isString().trim(),
     query('busca').optional().isString().trim(),
     query('pagina').optional().isInt({ min: 1 }).toInt(),
@@ -132,7 +132,7 @@ router.patch(
   '/:itemId/aprovar',
   [
     param('itemId').notEmpty().withMessage('ID do item é obrigatório'),
-    query('tipo').isIn(['orcamento', 'tesouraria', 'execucao']).withMessage('Tipo inválido'),
+    body('tipo').isIn(['orcamento', 'tesouraria', 'execucao']).withMessage('Tipo inválido'),
     body('observacoes').optional().isString().trim()
   ],
   validateRequest,

@@ -57,7 +57,7 @@ const aprovacaoService = {
       const endpoint = `/aprovacao/pendentes${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await apiClient.get(endpoint);
       
-      return response.data || [];
+      return response || [];
     } catch (error) {
       console.error('Erro ao listar itens pendentes:', error);
       throw error;
@@ -73,7 +73,7 @@ const aprovacaoService = {
    */
   async aprovarItem(itemId, tipo, observacoes = '') {
     try {
-      const response = await apiClient.patch(`/aprovacao/${tipo}/${itemId}/aprovar`, { observacoes });
+      const response = await apiClient.patch(`/aprovacao/${itemId}/aprovar`, { observacoes,tipo });
       return response.data;
     } catch (error) {
       console.error('Erro ao aprovar item:', error);

@@ -138,6 +138,7 @@ exports.listarOrcamentos = async (req, res, next) => {
  */
 exports.criarOrcamentoCompleto = async (req, res, next) => {
 
+  console.log('DADOS DO BODY',req.body.custos);
   const transaction = await Orcamento.sequelize.transaction();
 
   try {
@@ -404,7 +405,7 @@ exports.criarOrcamentoCompleto = async (req, res, next) => {
         {
           model: Ativo,
           as: 'ativos',
-          attributes: ['id', 'nome', 'descricao', 'valor', 'tipo', , 'contaPgc', 'nomeContaPgc', 'confiancaMapeamento']
+          attributes: ['id', 'nome', 'descricao', 'valor', 'tipo', 'contaPgc', 'nomeContaPgc', 'confiancaMapeamento']
         }
       ]
     });

@@ -7,7 +7,7 @@
  * @version 1.0.0
  */
 
-const { Orcamento, PlanoTesouraria, Execucao, Usuario } = require('../models');
+const { Orcamento, PlanoTesouraria, Usuario } = require('../models');
 const { logger } = require('../utils/logger');
 
 /**
@@ -43,12 +43,10 @@ const buscarItemPorTipo = async (tipo, itemId) => {
     case 'orcamento':
       Model = Orcamento;
       break;
-    case 'tesouraria':
+    case 'plano':
       Model = PlanoTesouraria;
       break;
-    case 'execucao':
-      Model = Execucao;
-      break;
+    
     default:
       throw new Error('Tipo de item inválido');
   }
@@ -57,7 +55,7 @@ const buscarItemPorTipo = async (tipo, itemId) => {
     include: [
       {
         model: Usuario,
-        as: 'criadoPor',
+        as: 'criador',
         attributes: ['id', 'nome', 'email']
       }
     ]
@@ -75,8 +73,9 @@ const buscarItemPorTipo = async (tipo, itemId) => {
  */
 const verificarPermissaoAprovacao = (user, item) => {
   // Lógica de permissões - pode ser expandida
-  if (user.perfil === 'admin') return true;
-  if (user.perfil === 'gestor' && user.departamento === item.departamento) return true;
+  console.log(user)
+  if (user.role === 'admin') return true;
+  if (user.role === 'gestor' && user.departamento === item.departamento) return true;
 
   // Verificações específicas por valor/tipo podem ser adicionadas aqui
   return false;
@@ -102,53 +101,69 @@ const listarItensPendentes = async (req, res) => {
     } = req.query;
 
     const offset = (pagina - 1) * limite;
+    
 
     // Buscar itens pendentes de diferentes módulos
     const filtros = montarFiltros(filtrosQuery);
 
-    const [orcamentos, planosTesouraria, execucoes] = await Promise.all([
+    const [orcamentos, planosTesouraria] = await Promise.all([
       Orcamento.findAll({
-        where: { ...filtros, status: 'pendente' },
-        include: [{ model: Usuario, as: 'criadoPor', attributes: ['id', 'nome', 'email'] }],
+        where: { ...filtros, status: 'em_analise' },
+        include: [
+          { model: Usuario, 
+            as: 'criador', 
+            attributes: ['id', 'nome', 'email'] 
+          },
+          { model: Usuario, 
+            as: 'aprovador', 
+            attributes: ['id', 'nome', 'email'] 
+          }
+        ],
         limit: limite,
         offset: offset,
         order: [[ordenarPor, ordem]]
       }),
       PlanoTesouraria.findAll({
-        where: { ...filtros, status: 'pendente' },
-        include: [{ model: Usuario, as: 'criadoPor', attributes: ['id', 'nome', 'email'] }],
-        limit: limite,
-        offset: offset,
-        order: [[ordenarPor, ordem]]
-      }),
-      Execucao.findAll({
-        where: { ...filtros, status: 'pendente' },
-        include: [{ model: Usuario, as: 'criadoPor', attributes: ['id', 'nome', 'email'] }],
+        where: { ...filtros, status: 'em_analise' },
+        include: [
+          { model: Usuario, 
+            as: 'criador', 
+            attributes: ['id', 'nome', 'email'] 
+          },
+          { model: Usuario, 
+            as: 'aprovador', 
+            attributes: ['id', 'nome', 'email'] 
+          },
+          {
+            model: Orcamento,
+            as: 'orcamentos',
+            attributes: ['id', 'nome', 'ano']
+          }
+        ],
         limit: limite,
         offset: offset,
         order: [[ordenarPor, ordem]]
       })
-    ]);
+    ]); 
 
     // Combinar e formatar resultados
-    const itensPendentes = [
+     const itensPendentes = [
       ...orcamentos.map(item => ({ ...item.toJSON(), tipo: 'orcamento' })),
-      ...planosTesouraria.map(item => ({ ...item.toJSON(), tipo: 'tesouraria' })),
-      ...execucoes.map(item => ({ ...item.toJSON(), tipo: 'execucao' }))
-    ];
+      ...planosTesouraria.map(item => ({ ...item.toJSON(), tipo: 'tesouraria' }))
+    ]; 
 
     // Ordenar final
-    itensPendentes.sort((a, b) => {
+     itensPendentes.sort((a, b) => {
       if (ordem === 'DESC') {
         return new Date(b.createdAt) - new Date(a.createdAt);
       }
       return new Date(a.createdAt) - new Date(b.createdAt);
-    });
+    }); 
 
     // Paginação
-    const totalItens = itensPendentes.length;
+     const totalItens = itensPendentes.length;
     const itensPaginados = itensPendentes.slice(0, limite);
-    const totalPaginas = Math.ceil(totalItens / limite);
+    const totalPaginas = Math.ceil(totalItens / limite); 
 
     res.status(200).json({
       status: 'success',
@@ -160,14 +175,14 @@ const listarItensPendentes = async (req, res) => {
         totalPaginas: totalPaginas,
         temProxima: pagina < totalPaginas,
         temAnterior: pagina > 1
-      }
+      } 
     });
   } catch (error) {
     logger.error('Erro ao listar itens pendentes:', error);
     res.status(500).json({
       status: 'error',
       message: 'Erro interno do servidor',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : error
     });
   }
 };
@@ -176,10 +191,10 @@ const listarItensPendentes = async (req, res) => {
  * Aprova um item
  */
 const aprovarItem = async (req, res) => {
+  console.log('Aprovar item chamado',req.body);
   try {
     const { itemId } = req.params;
-    const { tipo } = req.query;
-    const { observacoes } = req.body;
+    const { observacoes,tipo } = req.body;
 
     const { item, Model } = await buscarItemPorTipo(tipo, itemId);
 
@@ -192,7 +207,7 @@ const aprovarItem = async (req, res) => {
     }
 
     // Verificar se já foi processado
-    if (item.status !== 'pendente') {
+    if (item.status !== 'em_analise') {
       return res.status(400).json({
         status: 'error',
         message: 'Este item já foi processado'
@@ -214,6 +229,7 @@ const aprovarItem = async (req, res) => {
     });
   } catch (error) {
     logger.error('Erro ao aprovar item:', error);
+    console.log(error);
     res.status(500).json({
       status: 'error',
       message: 'Erro interno do servidor',
@@ -413,14 +429,6 @@ const obterEstatisticas = async (req, res) => {
           [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'quantidade']
         ],
         group: ['status']
-      }),
-      Execucao.findAll({
-        where: filtros,
-        attributes: [
-          'status',
-          [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'quantidade']
-        ],
-        group: ['status']
       })
     ]);
 
@@ -432,8 +440,7 @@ const obterEstatisticas = async (req, res) => {
       rejeitados: 0,
       porModulo: {
         orcamentos: { pendentes: 0, aprovados: 0, rejeitados: 0 },
-        tesouraria: { pendentes: 0, aprovados: 0, rejeitados: 0 },
-        execucoes: { pendentes: 0, aprovados: 0, rejeitados: 0 }
+        tesouraria: { pendentes: 0, aprovados: 0, rejeitados: 0 }
       }
     };
 
@@ -471,22 +478,7 @@ const obterEstatisticas = async (req, res) => {
       }
     });
 
-    // Processar execuções
-    execucoesStats.forEach(stat => {
-      const { status, quantidade } = stat.dataValues;
-      const qtd = parseInt(quantidade);
-      stats.total += qtd;
-      if (status === 'pendente') {
-        stats.pendentes += qtd;
-        stats.porModulo.execucoes.pendentes += qtd;
-      } else if (status === 'aprovado') {
-        stats.aprovados += qtd;
-        stats.porModulo.execucoes.aprovados += qtd;
-      } else if (status === 'rejeitado') {
-        stats.rejeitados += qtd;
-        stats.porModulo.execucoes.rejeitados += qtd;
-      }
-    });
+   
 
     res.status(200).json({
       status: 'success',
